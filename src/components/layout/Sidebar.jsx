@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
+import StockAlerts from '@/components/notifications/StockAlerts';
 
 const navItems = [
   { path: '/', label: 'İdarə Paneli', icon: Monitor, roles: ['admin', 'user'] },
+  { path: '/salon-layout', label: 'Salon Planı', icon: LayoutDashboard, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
   { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
@@ -51,6 +53,13 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
           );
         })}
       </nav>
+
+      {/* Stock Alerts */}
+      {!collapsed && (
+        <div className="px-2 pb-2">
+          <StockAlerts />
+        </div>
+      )}
 
       {/* Bottom */}
       <div className="p-2 border-t border-border space-y-1">

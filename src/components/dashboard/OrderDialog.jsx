@@ -32,7 +32,7 @@ export default function OrderDialog({ open, onOpenChange, table, session, onConf
     queryFn: () => base44.entities.Product.list(),
   });
 
-  const inStockProducts = products.filter(p => p.in_stock !== false);
+  const inStockProducts = products.filter(p => p.in_stock !== false && (p.stock_quantity == null || p.stock_quantity > 0));
   const filteredProducts = activeCategory === 'all'
     ? inStockProducts
     : inStockProducts.filter(p => p.category === activeCategory);
@@ -64,7 +64,7 @@ export default function OrderDialog({ open, onOpenChange, table, session, onConf
   const totalAmount = Object.values(cart).reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const cartCount = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const items = Object.values(cart).map(item => ({
       product_id: item.product.id,
       product_name: item.product.name,
@@ -72,6 +72,19 @@ export default function OrderDialog({ open, onOpenChange, table, session, onConf
       unit_price: item.product.price,
       total_price: item.product.price * item.quantity,
     }));
+
+    // Deduct stock for each ordered product
+    await Promise.all(
+      Object.values(cart).map(async (item) => {
+        const currentQty = item.product.stock_quantity ?? 0;
+        const newQty = Math.max(0, currentQty - item.quantity);
+        await base44.entities.Product.update(item.product.id, {
+          stock_quantity: newQty,
+          in_stock: newQty > 0,
+        });
+      })
+    );
+
     onConfirm(table, session, items, totalAmount);
     setCart({});
     onOpenChange(false);
@@ -124,7 +137,14 @@ export default function OrderDialog({ open, onOpenChange, table, session, onConf
                     <span className="text-sm font-medium text-foreground truncate">{product.name}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-primary">{product.price.toFixed(2)} ₼</span>
+                    <div>
+                      <span className="text-sm font-bold text-primary">{product.price.toFixed(2)} ₼</span>
+                      {product.stock_quantity != null && (
+                        <span className={`ml-1.5 text-[10px] ${product.stock_quantity <= (product.low_stock_threshold ?? 5) ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                          ({product.stock_quantity})
+                        </span>
+                      )}
+                    </div>
                     {inCart > 0 && (
                       <div className="flex items-center gap-1.5">
                         <Button size="icon" variant="outline" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); removeFromCart(product.id); }}>

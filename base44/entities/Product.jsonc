@@ -25,6 +25,16 @@
       "default": true,
       "description": "Stokda var/yox"
     },
+    "stock_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "M\u00f6vcud stok miqdar\u0131"
+    },
+    "low_stock_threshold": {
+      "type": "number",
+      "default": 5,
+      "description": "Kritik stok s\u0259viyy\u0259si (bu h\u0259dd\u0259 \u00e7atd\u0131qda x\u0259b\u0259rdarl\u0131q)"
+    },
     "image_url": {
       "type": "string",
       "description": "M\u0259hsul \u015f\u0259kli"

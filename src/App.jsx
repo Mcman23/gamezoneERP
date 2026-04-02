@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import SalonLayout from './pages/SalonLayout';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -39,6 +40,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/salon-layout" element={<SalonLayout />} />
         <Route path="/products" element={<Products />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />

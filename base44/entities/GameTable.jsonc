@@ -40,6 +40,16 @@
       "type": "number",
       "default": 0,
       "description": "S\u0131ralama n\u00f6mr\u0259si"
+    },
+    "pos_x": {
+      "type": "number",
+      "default": 0,
+      "description": "Salon x\u0259rit\u0259sind\u0259ki X m\u00f6vqeyi (piksel)"
+    },
+    "pos_y": {
+      "type": "number",
+      "default": 0,
+      "description": "Salon x\u0259rit\u0259sind\u0259ki Y m\u00f6vqeyi (piksel)"
     }
   },
   "required": [

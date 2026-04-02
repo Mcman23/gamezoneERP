@@ -9,36 +9,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Coffee, GlassWater, Cookie, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Coffee, GlassWater, Cookie, Package, AlertTriangle, PackageX, TrendingDown, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import StockBadge from '@/components/products/StockBadge';
 
 const categoryLabels = { yemek: 'Yemək', icki: 'İçki', atistirmalik: 'Atıştırmalıq', diger: 'Digər' };
 const categoryIcons = { yemek: Coffee, icki: GlassWater, atistirmalik: Cookie, diger: Package };
 
+const defaultForm = {
+  name: '', category: 'yemek', price: '',
+  in_stock: true, stock_quantity: 0, low_stock_threshold: 5,
+};
+
 export default function Products() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [restockDialog, setRestockDialog] = useState(null);
+  const [restockAmount, setRestockAmount] = useState(10);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', category: 'yemek', price: '', in_stock: true });
+  const [form, setForm] = useState(defaultForm);
+  const [filterTab, setFilterTab] = useState('all');
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list(),
   });
 
-  const resetForm = () => {
-    setForm({ name: '', category: 'yemek', price: '', in_stock: true });
-    setEditing(null);
-  };
+  const resetForm = () => { setForm(defaultForm); setEditing(null); };
 
   const openEdit = (product) => {
-    setForm({ name: product.name, category: product.category, price: product.price.toString(), in_stock: product.in_stock !== false });
+    setForm({
+      name: product.name,
+      category: product.category,
+      price: product.price.toString(),
+      in_stock: product.in_stock !== false,
+      stock_quantity: product.stock_quantity ?? 0,
+      low_stock_threshold: product.low_stock_threshold ?? 5,
+    });
     setEditing(product);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    const data = { ...form, price: parseFloat(form.price) };
+    const data = {
+      ...form,
+      price: parseFloat(form.price),
+      stock_quantity: parseInt(form.stock_quantity) || 0,
+      low_stock_threshold: parseInt(form.low_stock_threshold) || 5,
+    };
     if (editing) {
       await base44.entities.Product.update(editing.id, data);
       toast.success('Məhsul yeniləndi');
@@ -57,7 +75,38 @@ export default function Products() {
     toast.success('Məhsul silindi');
   };
 
-  const grouped = products.reduce((acc, p) => {
+  const handleRestock = async () => {
+    if (!restockDialog) return;
+    const newQty = (restockDialog.stock_quantity ?? 0) + restockAmount;
+    await base44.entities.Product.update(restockDialog.id, {
+      stock_quantity: newQty,
+      in_stock: newQty > 0,
+    });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    toast.success(`${restockDialog.name}: stok +${restockAmount} əlavə edildi (Cəmi: ${newQty})`);
+    setRestockDialog(null);
+    setRestockAmount(10);
+  };
+
+  // Stats
+  const totalProducts = products.length;
+  const outOfStock = products.filter(p => (p.stock_quantity ?? 0) === 0 && p.in_stock !== false);
+  const lowStock = products.filter(p => {
+    const qty = p.stock_quantity ?? 0;
+    const threshold = p.low_stock_threshold ?? 5;
+    return qty > 0 && qty <= threshold;
+  });
+
+  // Filter
+  const filtered = filterTab === 'all'
+    ? products
+    : filterTab === 'low'
+      ? lowStock
+      : filterTab === 'out'
+        ? outOfStock
+        : products.filter(p => p.category === filterTab);
+
+  const grouped = filtered.reduce((acc, p) => {
     const cat = p.category || 'diger';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(p);
@@ -69,49 +118,146 @@ export default function Products() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Məhsullar</h1>
-          <p className="text-sm text-muted-foreground mt-1">Yemək, içki və atıştırmalıqlar</p>
+          <p className="text-sm text-muted-foreground mt-1">Stok idarəsi və qiymətlər</p>
         </div>
         <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <Plus className="w-4 h-4 mr-1.5" /> Əlavə et
         </Button>
       </div>
 
+      {/* Stock Overview Cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4 border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Package className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Ümumi</p>
+              <p className="text-xl font-bold text-foreground">{totalProducts}</p>
+            </div>
+          </div>
+        </Card>
+        <Card
+          className="p-4 border-yellow-500/30 bg-yellow-500/5 cursor-pointer hover:bg-yellow-500/10 transition-colors"
+          onClick={() => setFilterTab(f => f === 'low' ? 'all' : 'low')}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-xs text-yellow-600">Az stok</p>
+              <p className="text-xl font-bold text-yellow-500">{lowStock.length}</p>
+            </div>
+          </div>
+        </Card>
+        <Card
+          className="p-4 border-destructive/30 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors"
+          onClick={() => setFilterTab(f => f === 'out' ? 'all' : 'out')}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center">
+              <PackageX className="w-5 h-5 text-destructive" />
+            </div>
+            <div>
+              <p className="text-xs text-destructive/80">Stokda yox</p>
+              <p className="text-xl font-bold text-destructive">{outOfStock.length}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { key: 'all', label: 'Hamısı' },
+          { key: 'yemek', label: 'Yemək' },
+          { key: 'icki', label: 'İçki' },
+          { key: 'atistirmalik', label: 'Atıştırmalıq' },
+          { key: 'diger', label: 'Digər' },
+          { key: 'low', label: '⚠ Az stok' },
+          { key: 'out', label: '✕ Bitib' },
+        ].map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilterTab(f.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filterTab === f.key
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Product Groups */}
       {Object.entries(grouped).map(([cat, items]) => {
-        const Icon = categoryIcons[cat] || Package;
+        const CatIcon = categoryIcons[cat] || Package;
         return (
           <div key={cat}>
             <div className="flex items-center gap-2 mb-3">
-              <Icon className="w-4 h-4 text-primary" />
+              <CatIcon className="w-4 h-4 text-primary" />
               <h2 className="font-semibold text-foreground">{categoryLabels[cat] || cat}</h2>
               <Badge variant="secondary" className="text-xs">{items.length}</Badge>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {items.map(product => (
-                <Card key={product.id} className="p-4 border-border flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground text-sm">{product.name}</p>
-                    <p className="text-primary font-bold text-sm">{product.price.toFixed(2)} ₼</p>
-                    {product.in_stock === false && <Badge variant="destructive" className="text-[10px] mt-1">Stokda yox</Badge>}
-                  </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(product)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(product)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+              {items.map(product => {
+                const isLow = (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= (product.low_stock_threshold ?? 5);
+                const isOut = (product.stock_quantity ?? 0) === 0 && product.in_stock !== false;
+                return (
+                  <Card
+                    key={product.id}
+                    className={`p-4 border transition-colors ${
+                      isOut ? 'border-destructive/30 bg-destructive/5'
+                        : isLow ? 'border-yellow-500/30 bg-yellow-500/5'
+                          : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground text-sm truncate">{product.name}</p>
+                        <p className="text-primary font-bold text-sm">{product.price.toFixed(2)} ₼</p>
+                      </div>
+                      <div className="flex gap-1 ml-2">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Stok əlavə et" onClick={() => { setRestockDialog(product); setRestockAmount(10); }}>
+                          <TrendingDown className="w-3 h-3 text-primary rotate-180" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(product)}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(product)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <StockBadge product={product} />
+                    <div className="mt-2 w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${
+                          isOut ? 'w-0'
+                            : isLow ? 'bg-yellow-500'
+                              : 'bg-primary'
+                        }`}
+                        style={{
+                          width: `${Math.min(100, ((product.stock_quantity ?? 0) / Math.max(20, (product.stock_quantity ?? 0))) * 100)}%`
+                        }}
+                      />
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );
       })}
 
-      {products.length === 0 && !isLoading && (
+      {filtered.length === 0 && !isLoading && (
         <div className="text-center py-16">
-          <Coffee className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">Hələ məhsul yoxdur</p>
+          <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground">Məhsul tapılmadı</p>
         </div>
       )}
 
@@ -142,6 +288,16 @@ export default function Products() {
               <Label className="text-xs text-muted-foreground">Qiymət (₼)</Label>
               <Input type="number" step="0.1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="0.00" />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Stok miqdarı</Label>
+                <Input type="number" min={0} value={form.stock_quantity} onChange={e => setForm(f => ({ ...f, stock_quantity: e.target.value }))} className="bg-secondary border-border mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Xəbərdarlıq həddi</Label>
+                <Input type="number" min={1} value={form.low_stock_threshold} onChange={e => setForm(f => ({ ...f, low_stock_threshold: e.target.value }))} className="bg-secondary border-border mt-1" />
+              </div>
+            </div>
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">Stokda var</Label>
               <Switch checked={form.in_stock} onCheckedChange={v => setForm(f => ({ ...f, in_stock: v }))} />
@@ -152,6 +308,43 @@ export default function Products() {
             <Button onClick={handleSave} disabled={!form.name || !form.price} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {editing ? 'Yenilə' : 'Əlavə et'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restock Dialog */}
+      <Dialog open={!!restockDialog} onOpenChange={(v) => { if (!v) setRestockDialog(null); }}>
+        <DialogContent className="bg-card border-border max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <RotateCcw className="w-4 h-4 text-primary" />
+              Stok Artır
+            </DialogTitle>
+          </DialogHeader>
+          {restockDialog && (
+            <div className="space-y-4 py-2">
+              <div className="bg-secondary rounded-xl p-3">
+                <p className="font-medium text-foreground text-sm">{restockDialog.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Mövcud stok: <span className="text-foreground font-bold">{restockDialog.stock_quantity ?? 0}</span></p>
+              </div>
+              <div className="flex gap-2">
+                {[5, 10, 20, 50].map(n => (
+                  <Button key={n} size="sm" variant={restockAmount === n ? "default" : "outline"} onClick={() => setRestockAmount(n)} className="text-xs flex-1">+{n}</Button>
+                ))}
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Xüsusi miqdar</Label>
+                <Input type="number" min={1} value={restockAmount} onChange={e => setRestockAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
+              </div>
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex justify-between">
+                <span className="text-sm text-muted-foreground">Yeni stok</span>
+                <span className="text-sm font-bold text-primary">{(restockDialog.stock_quantity ?? 0) + restockAmount}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestockDialog(null)}>Ləğv et</Button>
+            <Button onClick={handleRestock} className="bg-primary hover:bg-primary/90 text-primary-foreground">Stok əlavə et</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
