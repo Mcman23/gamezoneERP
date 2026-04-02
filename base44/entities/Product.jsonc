@@ -1,0 +1,38 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "M\u0259hsulun ad\u0131"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "yemek",
+        "icki",
+        "atistirmalik",
+        "diger"
+      ],
+      "description": "Kateqoriya"
+    },
+    "price": {
+      "type": "number",
+      "description": "Qiym\u0259ti (AZN)"
+    },
+    "in_stock": {
+      "type": "boolean",
+      "default": true,
+      "description": "Stokda var/yox"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "M\u0259hsul \u015f\u0259kli"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "price"
+  ]
+}

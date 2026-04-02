@@ -1,0 +1,67 @@
+{
+  "name": "Session",
+  "type": "object",
+  "properties": {
+    "table_id": {
+      "type": "string",
+      "description": "Masa ID-si"
+    },
+    "table_name": {
+      "type": "string",
+      "description": "Masa ad\u0131"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ba\u015flama vaxt\u0131"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Bitm\u0259 vaxt\u0131"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "M\u00fcdd\u0259t (d\u0259qiq\u0259)"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Saatl\u0131q qiym\u0259t"
+    },
+    "session_cost": {
+      "type": "number",
+      "description": "Sessiya qiym\u0259ti (AZN)"
+    },
+    "orders_cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Sifari\u015fl\u0259rin \u00fcmumi qiym\u0259ti (AZN)"
+    },
+    "total_cost": {
+      "type": "number",
+      "description": "\u00dcmumi m\u0259bl\u0259\u011f (AZN)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Sessiya v\u0259ziyy\u0259ti"
+    },
+    "paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u00d6d\u0259nilib/\u00d6d\u0259nilm\u0259yib"
+    }
+  },
+  "required": [
+    "table_id",
+    "table_name",
+    "start_time",
+    "duration_minutes",
+    "hourly_rate"
+  ]
+}

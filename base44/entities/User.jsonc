@@ -1,0 +1,15 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user",
+      "description": "\u0130stifad\u0259\u00e7i rolu - admin (y\u00f6n\u0259tim) v\u0259 ya user (kassir)"
+    }
+  }
+}

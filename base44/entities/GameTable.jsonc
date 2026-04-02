@@ -1,0 +1,50 @@
+{
+  "name": "GameTable",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Masan\u0131n ad\u0131 (m\u0259s: PC-1, PS-3)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pc",
+        "playstation"
+      ],
+      "description": "Masa tipi"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "occupied",
+        "maintenance"
+      ],
+      "default": "available",
+      "description": "Masan\u0131n v\u0259ziyy\u0259ti"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Saatl\u0131q qiym\u0259t (AZN)"
+    },
+    "current_session_id": {
+      "type": "string",
+      "description": "Cari sessiyan\u0131n ID-si"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Cihaz\u0131n IP \u00fcnvan\u0131 (uzaqdan idar\u0259 \u00fc\u00e7\u00fcn)"
+    },
+    "order_number": {
+      "type": "number",
+      "default": 0,
+      "description": "S\u0131ralama n\u00f6mr\u0259si"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "hourly_rate"
+  ]
+}
