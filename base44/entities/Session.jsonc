@@ -55,6 +55,14 @@
       "type": "boolean",
       "default": false,
       "description": "\u00d6d\u0259nilib/\u00d6d\u0259nilm\u0259yib"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card"
+      ],
+      "description": "\u00d6d\u0259ni\u015f \u00fcsulu: nagd v\u0259 ya kart"
     }
   },
   "required": [

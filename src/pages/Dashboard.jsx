@@ -72,12 +72,13 @@ export default function Dashboard() {
   };
 
   // Stop session
-  const stopSession = async (table, session) => {
+  const stopSession = async (table, session, paymentMethod = 'cash') => {
     const totalCost = (session.session_cost || 0) + (session.orders_cost || 0);
     await base44.entities.Session.update(session.id, {
       status: 'completed',
       total_cost: parseFloat(totalCost.toFixed(2)),
       paid: true,
+      payment_method: paymentMethod,
     });
     await base44.entities.GameTable.update(table.id, {
       status: 'available',
@@ -86,7 +87,8 @@ export default function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
-    toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼`);
+    const methodLabel = paymentMethod === 'card' ? 'Kart' : 'Nağd';
+    toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼ (${methodLabel})`);
   };
 
   // Extend session
