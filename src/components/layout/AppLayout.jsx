@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import NotificationSystem from '../notifications/NotificationSystem';
+import CustomerOrderNotifications from '../notifications/CustomerOrderNotifications';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout() {
@@ -38,6 +39,7 @@ export default function AppLayout() {
 
       {/* Notification System */}
       <NotificationSystem />
+      <CustomerOrderNotifications />
     </div>
   );
 }

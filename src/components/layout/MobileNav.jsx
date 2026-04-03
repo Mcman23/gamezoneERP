@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard } from 'lucide-react';
+import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/', label: 'Panel', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/salon-layout', label: 'Salon', icon: LayoutDashboard, roles: ['admin', 'user'] },
+  { path: '/reservations', label: 'Rezerv', icon: CalendarDays, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
   { path: '/reports', label: 'Hesabat', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzim', icon: Settings, roles: ['admin'] },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import StockAlerts from '@/components/notifications/StockAlerts';
 const navItems = [
   { path: '/', label: 'İdarə Paneli', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/salon-layout', label: 'Salon Planı', icon: LayoutDashboard, roles: ['admin', 'user'] },
+  { path: '/reservations', label: 'Rezervasiyalar', icon: CalendarDays, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
   { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },

@@ -1,0 +1,57 @@
+{
+  "name": "Reservation",
+  "type": "object",
+  "properties": {
+    "table_id": {
+      "type": "string",
+      "description": "Masa ID"
+    },
+    "table_name": {
+      "type": "string",
+      "description": "Masa ad\u0131"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "M\u00fc\u015ft\u0259ri ad\u0131"
+    },
+    "customer_phone": {
+      "type": "string",
+      "description": "\u018flaq\u0259 n\u00f6mr\u0259si"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Rezervasiya tarixi"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Ba\u015flama vaxt\u0131 (HH:mm)"
+    },
+    "duration_hours": {
+      "type": "number",
+      "default": 1,
+      "description": "M\u00fcdd\u0259t (saat)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Qeydl\u0259r"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "pending",
+        "cancelled"
+      ],
+      "default": "confirmed",
+      "description": "Rezervasiya statusu"
+    }
+  },
+  "required": [
+    "table_id",
+    "table_name",
+    "customer_name",
+    "date",
+    "start_time"
+  ]
+}

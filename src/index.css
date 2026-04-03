@@ -7,74 +7,74 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 40% 10%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 40% 10%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 142 76% 46%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 222 30% 16%;
-    --secondary-foreground: 210 40% 90%;
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 51%;
+    --background: 224 30% 10%;
+    --foreground: 220 20% 94%;
+    --card: 224 28% 14%;
+    --card-foreground: 220 20% 94%;
+    --popover: 224 28% 14%;
+    --popover-foreground: 220 20% 94%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 224 30% 10%;
+    --secondary: 224 22% 20%;
+    --secondary-foreground: 220 20% 88%;
+    --muted: 224 22% 17%;
+    --muted-foreground: 220 14% 58%;
+    --accent: 280 75% 65%;
+    --accent-foreground: 224 30% 10%;
+    --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 142 76% 46%;
-    --chart-1: 142 76% 46%;
-    --chart-2: 262 83% 58%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 199 89% 48%;
-    --chart-5: 0 72% 51%;
+    --border: 224 22% 22%;
+    --input: 224 22% 22%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 280 75% 65%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 160 75% 50%;
+    --chart-5: 0 72% 56%;
     --radius: 0.75rem;
-    --sidebar-background: 222 40% 8%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 142 76% 46%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 14%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 142 76% 46%;
+    --sidebar-background: 224 30% 8%;
+    --sidebar-foreground: 220 20% 94%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 224 30% 10%;
+    --sidebar-accent: 224 22% 17%;
+    --sidebar-accent-foreground: 220 20% 94%;
+    --sidebar-border: 224 22% 20%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
-    --card: 222 40% 10%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 40% 10%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 142 76% 46%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 222 30% 16%;
-    --secondary-foreground: 210 40% 90%;
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 51%;
+    --background: 224 30% 10%;
+    --foreground: 220 20% 94%;
+    --card: 224 28% 14%;
+    --card-foreground: 220 20% 94%;
+    --popover: 224 28% 14%;
+    --popover-foreground: 220 20% 94%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 224 30% 10%;
+    --secondary: 224 22% 20%;
+    --secondary-foreground: 220 20% 88%;
+    --muted: 224 22% 17%;
+    --muted-foreground: 220 14% 58%;
+    --accent: 280 75% 65%;
+    --accent-foreground: 224 30% 10%;
+    --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 142 76% 46%;
-    --chart-1: 142 76% 46%;
-    --chart-2: 262 83% 58%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 199 89% 48%;
-    --chart-5: 0 72% 51%;
-    --sidebar-background: 222 40% 8%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 142 76% 46%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 14%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 142 76% 46%;
+    --border: 224 22% 22%;
+    --input: 224 22% 22%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 280 75% 65%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 160 75% 50%;
+    --chart-5: 0 72% 56%;
+    --sidebar-background: 224 30% 8%;
+    --sidebar-foreground: 220 20% 94%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 224 30% 10%;
+    --sidebar-accent: 224 22% 17%;
+    --sidebar-accent-foreground: 220 20% 94%;
+    --sidebar-border: 224 22% 20%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -88,44 +88,33 @@
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(222 40% 8%);
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(222 30% 22%);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(222 30% 30%);
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: hsl(224 30% 8%); }
+::-webkit-scrollbar-thumb { background: hsl(224 22% 26%); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(224 22% 34%); }
 
-/* Pulse animation for notifications */
+/* Glow animations */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 hsla(142, 76%, 46%, 0.4); }
-  50% { box-shadow: 0 0 20px 4px hsla(142, 76%, 46%, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 hsla(217, 91%, 60%, 0.35); }
+  50% { box-shadow: 0 0 22px 5px hsla(217, 91%, 60%, 0.15); }
 }
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
+.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 
 @keyframes warning-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsla(38, 92%, 50%, 0.4); }
-  50% { box-shadow: 0 0 20px 4px hsla(38, 92%, 50%, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 hsla(38, 92%, 55%, 0.4); }
+  50% { box-shadow: 0 0 20px 4px hsla(38, 92%, 55%, 0.2); }
 }
-
-.warning-pulse {
-  animation: warning-pulse 1.5s ease-in-out infinite;
-}
+.warning-pulse { animation: warning-pulse 1.5s ease-in-out infinite; }
 
 @keyframes danger-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsla(0, 72%, 51%, 0.4); }
-  50% { box-shadow: 0 0 20px 4px hsla(0, 72%, 51%, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 hsla(0, 72%, 56%, 0.4); }
+  50% { box-shadow: 0 0 20px 4px hsla(0, 72%, 56%, 0.2); }
 }
+.danger-pulse { animation: danger-pulse 1s ease-in-out infinite; }
 
-.danger-pulse {
-  animation: danger-pulse 1s ease-in-out infinite;
+@keyframes order-ping {
+  0% { box-shadow: 0 0 0 0 hsla(280, 75%, 65%, 0.6); }
+  70% { box-shadow: 0 0 0 14px hsla(280, 75%, 65%, 0); }
+  100% { box-shadow: 0 0 0 0 hsla(280, 75%, 65%, 0); }
 }
+.order-ping { animation: order-ping 1.2s ease-out; }
