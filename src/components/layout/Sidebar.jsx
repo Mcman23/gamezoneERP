@@ -7,18 +7,18 @@ import { cn } from '@/lib/utils';
 import StockAlerts from '@/components/notifications/StockAlerts';
 
 const navItems = [
-  { path: '/', label: 'İdarə Paneli', icon: Monitor, roles: ['admin', 'user'] },
-  { path: '/salon-layout', label: 'Salon Planı', icon: LayoutDashboard, roles: ['admin', 'user'] },
-  { path: '/reservations', label: 'Rezervasiyalar', icon: CalendarDays, roles: ['admin', 'user'] },
-  { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
-  { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
-  { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
-];
+{ path: '/', label: 'İdarə Paneli', icon: Monitor, roles: ['admin', 'user'] },
+{ path: '/salon-layout', label: 'Salon Planı', icon: LayoutDashboard, roles: ['admin', 'user'] },
+{ path: '/reservations', label: 'Rezervasiyalar', icon: CalendarDays, roles: ['admin', 'user'] },
+{ path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
+{ path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
+{ path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] }];
+
 
 export default function Sidebar({ collapsed, setCollapsed, userRole }) {
   const location = useLocation();
 
-  const filteredItems = navItems.filter(item => item.roles.includes(userRole || 'user'));
+  const filteredItems = navItems.filter((item) => item.roles.includes(userRole || 'user'));
 
   return (
     <aside className={cn(
@@ -30,9 +30,9 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
         <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
           <Gamepad2 className="w-5 h-5 text-primary" />
         </div>
-        {!collapsed && (
-          <span className="text-lg font-bold text-foreground tracking-tight truncate">GameZone</span>
-        )}
+        {!collapsed &&
+        <span className="text-lg font-bold text-foreground tracking-tight truncate">GameZone</span>
+        }
       </div>
 
       {/* Nav */}
@@ -43,24 +43,24 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
             <Link key={item.path} to={item.path}>
               <div className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                isActive ?
+                "bg-primary/10 text-primary" :
+                "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}>
                 <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
+                {!collapsed && <span className="text-slate-50 text-sm font-medium truncate">{item.label}</span>}
               </div>
-            </Link>
-          );
+            </Link>);
+
         })}
       </nav>
 
       {/* Stock Alerts */}
-      {!collapsed && (
-        <div className="px-2 pb-2">
+      {!collapsed &&
+      <div className="px-2 pb-2">
           <StockAlerts />
         </div>
-      )}
+      }
 
       {/* Bottom */}
       <div className="p-2 border-t border-border space-y-1">
@@ -68,20 +68,20 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
           variant="ghost"
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center text-muted-foreground hover:text-foreground"
-        >
+          className="w-full justify-center text-muted-foreground hover:text-foreground">
+          
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => base44.auth.logout()}
-          className={cn("w-full text-muted-foreground hover:text-destructive", collapsed ? "justify-center" : "justify-start")}
-        >
+          className={cn("w-full text-muted-foreground hover:text-destructive", collapsed ? "justify-center" : "justify-start")}>
+          
           <LogOut className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span className="ml-2 text-sm">Çıxış</span>}
         </Button>
       </div>
-    </aside>
-  );
+    </aside>);
+
 }

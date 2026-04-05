@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 function formatTime(totalSeconds) {
   if (totalSeconds <= 0) return '00:00:00';
   const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
+  const m = Math.floor(totalSeconds % 3600 / 60);
   const s = totalSeconds % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
@@ -20,14 +20,14 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
   const isOccupied = table.status === 'occupied' && session;
 
   useEffect(() => {
-    if (!isOccupied) { setRemaining(null); return; }
+    if (!isOccupied) {setRemaining(null);return;}
     if (session?.is_unlimited) {
       const update = () => setElapsedSecs(Math.floor((new Date() - new Date(session.start_time)) / 1000));
       update();
       const interval = setInterval(update, 1000);
       return () => clearInterval(interval);
     }
-    if (!session?.end_time) { setRemaining(null); return; }
+    if (!session?.end_time) {setRemaining(null);return;}
     const update = () => {
       const diff = Math.floor((new Date(session.end_time) - new Date()) / 1000);
       setRemaining(Math.max(0, diff));
@@ -47,20 +47,20 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
   return (
     <Card className={cn(
       "relative overflow-hidden transition-all duration-300 border",
-      isOccupied
-        ? isDanger
-          ? "border-destructive/50 danger-pulse"
-          : isWarning
-            ? "border-yellow-500/50 warning-pulse"
-            : "border-primary/30 pulse-glow"
-        : "border-border hover:border-muted-foreground/30"
+      isOccupied ?
+      isDanger ?
+      "border-destructive/50 danger-pulse" :
+      isWarning ?
+      "border-yellow-500/50 warning-pulse" :
+      "border-primary/30 pulse-glow" :
+      "border-border hover:border-muted-foreground/30"
     )}>
       {/* Status indicator line */}
       <div className={cn(
         "h-1 w-full",
-        isOccupied
-          ? isDanger ? "bg-destructive" : isWarning ? "bg-yellow-500" : "bg-primary"
-          : "bg-muted"
+        isOccupied ?
+        isDanger ? "bg-destructive" : isWarning ? "bg-yellow-500" : "bg-primary" :
+        "bg-muted"
       )} />
 
       <div className="p-4">
@@ -71,9 +71,9 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
               "w-9 h-9 rounded-lg flex items-center justify-center",
               isOccupied ? "bg-primary/10" : "bg-muted"
             )}>
-              {table.type === 'pc'
-                ? <Monitor className={cn("w-5 h-5", isOccupied ? "text-primary" : "text-muted-foreground")} />
-                : <Gamepad2 className={cn("w-5 h-5", isOccupied ? "text-primary" : "text-muted-foreground")} />
+              {table.type === 'pc' ?
+              <Monitor className={cn("w-5 h-5", isOccupied ? "text-primary" : "text-muted-foreground")} /> :
+              <Gamepad2 className={cn("w-5 h-5", isOccupied ? "text-primary" : "text-muted-foreground")} />
               }
             </div>
             <div>
@@ -85,17 +85,17 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
           </div>
           <Badge variant={isOccupied ? "default" : "secondary"} className={cn(
             "text-[10px]",
-            isOccupied 
-              ? isDanger ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-primary/10 text-primary border border-primary/20"
-              : ""
+            isOccupied ?
+            isDanger ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-primary/10 text-primary border border-primary/20" :
+            ""
           )}>
-            {isOccupied ? (isExpired ? 'Vaxt bitdi' : 'Aktiv') : 'Boş'}
+            {isOccupied ? isExpired ? 'Vaxt bitdi' : 'Aktiv' : 'Boş'}
           </Badge>
         </div>
 
         {/* Timer */}
-        {isOccupied && isUnlimited && (
-          <div className="text-center py-3 rounded-lg mb-3 bg-accent/5">
+        {isOccupied && isUnlimited &&
+        <div className="text-center py-3 rounded-lg mb-3 bg-accent/5">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Clock className="w-3.5 h-3.5 text-accent" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Keçən vaxt</span>
@@ -104,60 +104,60 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
               {formatTime(elapsedSecs)}
             </span>
           </div>
-        )}
-        {isOccupied && !isUnlimited && remaining !== null && (
-          <div className={cn(
-            "text-center py-3 rounded-lg mb-3",
-            isDanger ? "bg-destructive/5" : isWarning ? "bg-yellow-500/5" : "bg-primary/5"
-          )}>
+        }
+        {isOccupied && !isUnlimited && remaining !== null &&
+        <div className={cn(
+          "text-center py-3 rounded-lg mb-3",
+          isDanger ? "bg-destructive/5" : isWarning ? "bg-yellow-500/5" : "bg-primary/5"
+        )}>
             <div className="flex items-center justify-center gap-2 mb-1">
               <Clock className={cn("w-3.5 h-3.5", isDanger ? "text-destructive" : isWarning ? "text-yellow-500" : "text-primary")} />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Qalan vaxt</span>
             </div>
             <span className={cn(
-              "text-2xl font-mono font-bold tracking-wider",
-              isDanger ? "text-destructive" : isWarning ? "text-yellow-500" : "text-primary"
-            )}>
+            "text-2xl font-mono font-bold tracking-wider",
+            isDanger ? "text-destructive" : isWarning ? "text-yellow-500" : "text-primary"
+          )}>
               {formatTime(remaining)}
             </span>
           </div>
-        )}
+        }
 
         {/* Cost */}
-        {isOccupied && (
-          <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 mb-3">
+        {isOccupied &&
+        <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 mb-3">
             <span className="text-xs text-muted-foreground">Ümumi</span>
             <span className="text-sm font-bold text-foreground">{totalCost} ₼</span>
           </div>
-        )}
+        }
 
         {/* Price info when available */}
-        {!isOccupied && (
-          <div className="text-center py-2 mb-3">
-            <span className="text-lg font-bold text-muted-foreground">{table.hourly_rate} ₼</span>
+        {!isOccupied &&
+        <div className="text-center py-2 mb-3">
+            <span className="text-slate-50 text-lg font-bold">{table.hourly_rate} ₼</span>
             <span className="text-xs text-muted-foreground"> / saat</span>
           </div>
-        )}
+        }
 
         {/* Actions */}
         <div className="space-y-1.5">
-          {!isOccupied ? (
-            <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
+          {!isOccupied ?
+          <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
               <Play className="w-3.5 h-3.5 mr-1.5" /> Aç
-            </Button>
-          ) : (
-            <>
+            </Button> :
+
+          <>
               {/* Quick stop button always visible */}
               <div className="grid grid-cols-2 gap-1.5">
                 <Button size="sm" variant="destructive" onClick={() => onStop(table, session)} className="text-xs">
                   <Square className="w-3 h-3 mr-1" /> Bağla
                 </Button>
                 <Button
-                  size="sm"
-                  variant={menuOpen ? 'secondary' : 'outline'}
-                  onClick={() => setMenuOpen(v => !v)}
-                  className="text-xs font-medium"
-                >
+                size="sm"
+                variant={menuOpen ? 'secondary' : 'outline'}
+                onClick={() => setMenuOpen((v) => !v)}
+                className="text-xs font-medium">
+                
                   <Zap className="w-3 h-3 mr-1" />
                   İdarəetmə
                   {menuOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
@@ -165,15 +165,15 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
               </div>
 
               {/* Expanded management menu */}
-              {menuOpen && (
-                <div className="rounded-xl border border-border bg-secondary/60 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+              {menuOpen &&
+            <div className="rounded-xl border border-border bg-secondary/60 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Masa İdarəetməsi</p>
 
                   {/* Extend */}
                   <button
-                    onClick={() => { onExtend(table, session); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group"
-                  >
+                onClick={() => {onExtend(table, session);setMenuOpen(false);}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group">
+                
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20">
                       <Plus className="w-4 h-4 text-primary" />
                     </div>
@@ -185,9 +185,9 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
 
                   {/* Order */}
                   <button
-                    onClick={() => { onOrder(table, session); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-accent/40 hover:bg-accent/5 transition-all group"
-                  >
+                onClick={() => {onOrder(table, session);setMenuOpen(false);}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-accent/40 hover:bg-accent/5 transition-all group">
+                
                     <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20">
                       <Coffee className="w-4 h-4 text-accent" />
                     </div>
@@ -199,9 +199,9 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
 
                   {/* Restart */}
                   <button
-                    onClick={() => { onRestart(table); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-yellow-500/40 hover:bg-yellow-500/5 transition-all group"
-                  >
+                onClick={() => {onRestart(table);setMenuOpen(false);}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-yellow-500/40 hover:bg-yellow-500/5 transition-all group">
+                
                     <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20">
                       <RotateCcw className="w-4 h-4 text-yellow-500" />
                     </div>
@@ -211,11 +211,11 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
                     </div>
                   </button>
                 </div>
-              )}
+            }
             </>
-          )}
+          }
         </div>
       </div>
-    </Card>
-  );
+    </Card>);
+
 }
