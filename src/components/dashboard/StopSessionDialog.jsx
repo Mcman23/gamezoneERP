@@ -1,18 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Banknote, CreditCard } from 'lucide-react';
+import { AlertTriangle, Banknote, CreditCard, Infinity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function StopSessionDialog({ open, onOpenChange, table, session, onConfirm }) {
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!open || !session?.is_unlimited) return;
+    const update = () => {
+      const mins = Math.floor((new Date() - new Date(session.start_time)) / 60000);
+      setElapsed(mins);
+    };
+    update();
+    const iv = setInterval(update, 10000);
+    return () => clearInterval(iv);
+  }, [open, session]);
 
   if (!table || !session) return null;
 
-  const totalCost = ((session.session_cost || 0) + (session.orders_cost || 0)).toFixed(2);
+  const isUnlimited = session.is_unlimited;
+  const actualSessionCost = isUnlimited
+    ? parseFloat(((elapsed / 60) * session.hourly_rate).toFixed(2))
+    : (session.session_cost || 0);
+  const totalCost = (actualSessionCost + (session.orders_cost || 0)).toFixed(2);
 
   const handleConfirm = () => {
-    onConfirm(table, session, paymentMethod);
+    onConfirm(table, session, paymentMethod, isUnlimited ? elapsed : null);
     onOpenChange(false);
   };
 
@@ -27,11 +43,19 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
         </DialogHeader>
 
         <div className="py-2 space-y-4">
+          {/* Unlimited badge */}
+          {isUnlimited && (
+            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+              <Infinity className="w-4 h-4 text-accent" />
+              <span className="text-xs text-accent font-medium">Limitsiz sessiya — {elapsed} dəqiqə keçib</span>
+            </div>
+          )}
+
           {/* Cost breakdown */}
           <div className="bg-secondary rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Sessiya qiyməti</span>
-              <span className="text-foreground">{(session.session_cost || 0).toFixed(2)} ₼</span>
+              <span className="text-foreground">{actualSessionCost.toFixed(2)} ₼</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Sifarişlər</span>

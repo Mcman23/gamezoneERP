@@ -43,21 +43,23 @@ export default function Dashboard() {
   // Start session
   const startSession = async (table, durationMinutes) => {
     const now = new Date();
-    const endTime = new Date(now.getTime() + durationMinutes * 60000);
-    const sessionCost = (durationMinutes / 60) * table.hourly_rate;
+    const isUnlimited = durationMinutes === null;
+    const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
+    const sessionCost = isUnlimited ? 0 : (durationMinutes / 60) * table.hourly_rate;
 
     const session = await base44.entities.Session.create({
       table_id: table.id,
       table_name: table.name,
       start_time: now.toISOString(),
-      end_time: endTime.toISOString(),
-      duration_minutes: durationMinutes,
+      end_time: isUnlimited ? null : endTime.toISOString(),
+      duration_minutes: isUnlimited ? 0 : durationMinutes,
       hourly_rate: table.hourly_rate,
       session_cost: parseFloat(sessionCost.toFixed(2)),
       orders_cost: 0,
       total_cost: parseFloat(sessionCost.toFixed(2)),
       status: 'active',
       paid: false,
+      is_unlimited: isUnlimited,
     });
 
     await base44.entities.GameTable.update(table.id, {
@@ -68,14 +70,21 @@ export default function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
-    toast.success(`${table.name} açıldı — ${durationMinutes} dəqiqə`);
+    toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəqiqə'}`);
   };
 
   // Stop session
-  const stopSession = async (table, session, paymentMethod = 'cash') => {
-    const totalCost = (session.session_cost || 0) + (session.orders_cost || 0);
+  const stopSession = async (table, session, paymentMethod = 'cash', elapsedMinutes = null) => {
+    const isUnlimited = session.is_unlimited;
+    const actualSessionCost = isUnlimited
+      ? parseFloat(((elapsedMinutes / 60) * session.hourly_rate).toFixed(2))
+      : (session.session_cost || 0);
+    const totalCost = actualSessionCost + (session.orders_cost || 0);
+
     await base44.entities.Session.update(session.id, {
       status: 'completed',
+      duration_minutes: isUnlimited ? elapsedMinutes : session.duration_minutes,
+      session_cost: actualSessionCost,
       total_cost: parseFloat(totalCost.toFixed(2)),
       paid: true,
       payment_method: paymentMethod,

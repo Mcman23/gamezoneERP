@@ -16,10 +16,18 @@ function formatTime(totalSeconds) {
 export default function TableCard({ table, session, onStart, onStop, onRestart, onShutdown, onExtend, onOrder }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [remaining, setRemaining] = useState(null);
+  const [elapsedSecs, setElapsedSecs] = useState(0);
   const isOccupied = table.status === 'occupied' && session;
 
   useEffect(() => {
-    if (!isOccupied || !session?.end_time) { setRemaining(null); return; }
+    if (!isOccupied) { setRemaining(null); return; }
+    if (session?.is_unlimited) {
+      const update = () => setElapsedSecs(Math.floor((new Date() - new Date(session.start_time)) / 1000));
+      update();
+      const interval = setInterval(update, 1000);
+      return () => clearInterval(interval);
+    }
+    if (!session?.end_time) { setRemaining(null); return; }
     const update = () => {
       const diff = Math.floor((new Date(session.end_time) - new Date()) / 1000);
       setRemaining(Math.max(0, diff));
@@ -27,11 +35,12 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [isOccupied, session?.end_time]);
+  }, [isOccupied, session?.end_time, session?.is_unlimited, session?.start_time]);
 
-  const isWarning = remaining !== null && remaining <= 600 && remaining > 300;
-  const isDanger = remaining !== null && remaining <= 300;
-  const isExpired = remaining !== null && remaining === 0;
+  const isUnlimited = session?.is_unlimited;
+  const isWarning = !isUnlimited && remaining !== null && remaining <= 600 && remaining > 300;
+  const isDanger = !isUnlimited && remaining !== null && remaining <= 300;
+  const isExpired = !isUnlimited && remaining !== null && remaining === 0;
 
   const totalCost = session ? ((session.session_cost || 0) + (session.orders_cost || 0)).toFixed(2) : '0.00';
 
@@ -85,7 +94,18 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
         </div>
 
         {/* Timer */}
-        {isOccupied && remaining !== null && (
+        {isOccupied && isUnlimited && (
+          <div className="text-center py-3 rounded-lg mb-3 bg-accent/5">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Clock className="w-3.5 h-3.5 text-accent" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Keçən vaxt</span>
+            </div>
+            <span className="text-2xl font-mono font-bold tracking-wider text-accent">
+              {formatTime(elapsedSecs)}
+            </span>
+          </div>
+        )}
+        {isOccupied && !isUnlimited && remaining !== null && (
           <div className={cn(
             "text-center py-3 rounded-lg mb-3",
             isDanger ? "bg-destructive/5" : isWarning ? "bg-yellow-500/5" : "bg-primary/5"
