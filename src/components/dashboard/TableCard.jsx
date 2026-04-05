@@ -83,12 +83,12 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
               </p>
             </div>
           </div>
-          <Badge variant={isOccupied ? "default" : "secondary"} className={cn(
-            "text-[10px]",
-            isOccupied ?
-            isDanger ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-primary/10 text-primary border border-primary/20" :
-            ""
-          )}>
+          <Badge variant={isOccupied ? "default" : "secondary"} className="bg-secondary text-slate-50 px-2.5 py-0.5 font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80">
+
+
+
+
+            
             {isOccupied ? isExpired ? 'Vaxt bitdi' : 'Aktiv' : 'Boş'}
           </Badge>
         </div>
