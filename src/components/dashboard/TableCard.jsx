@@ -83,7 +83,7 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
               </p>
             </div>
           </div>
-          <Badge variant={isOccupied ? "default" : "secondary"} className="bg-secondary text-slate-50 px-2.5 py-0.5 font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80">
+          <Badge variant={isOccupied ? "default" : "secondary"} className="bg-secondary text-red-700 px-2.5 py-0.5 text-xs font-semibold rounded-md shadow inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80">
 
 
 
