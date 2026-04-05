@@ -47,7 +47,7 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
                 "bg-primary/10 text-primary" :
                 "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}>
-                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <item.icon className="text-[hsl(var(--chart-4))] lucide lucide-coffee w-5 h-5 flex-shrink-0" />
                 {!collapsed && <span className="text-slate-50 text-sm font-medium truncate">{item.label}</span>}
               </div>
             </Link>);
