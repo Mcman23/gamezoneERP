@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, Gamepad2, Play, Square, RotateCcw, Power, Coffee, Clock, Plus } from 'lucide-react';
+import { Monitor, Gamepad2, Play, Square, RotateCcw, Power, Coffee, Clock, Plus, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function formatTime(totalSeconds) {
@@ -14,6 +14,7 @@ function formatTime(totalSeconds) {
 }
 
 export default function TableCard({ table, session, onStart, onStop, onRestart, onShutdown, onExtend, onOrder }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [remaining, setRemaining] = useState(null);
   const isOccupied = table.status === 'occupied' && session;
 
@@ -119,25 +120,78 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
         )}
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="space-y-1.5">
           {!isOccupied ? (
-            <Button size="sm" className="col-span-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
+            <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
               <Play className="w-3.5 h-3.5 mr-1.5" /> Aç
             </Button>
           ) : (
             <>
-              <Button size="sm" variant="destructive" onClick={() => onStop(table, session)} className="text-xs">
-                <Square className="w-3 h-3 mr-1" /> Bağla
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => onOrder(table, session)} className="text-xs">
-                <Coffee className="w-3 h-3 mr-1" /> Sifariş
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => onRestart(table)} className="text-xs">
-                <RotateCcw className="w-3 h-3 mr-1" /> Restart
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => onExtend(table, session)} className="text-xs">
-                <Plus className="w-3 h-3 mr-1" /> Uzat
-              </Button>
+              {/* Quick stop button always visible */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <Button size="sm" variant="destructive" onClick={() => onStop(table, session)} className="text-xs">
+                  <Square className="w-3 h-3 mr-1" /> Bağla
+                </Button>
+                <Button
+                  size="sm"
+                  variant={menuOpen ? 'secondary' : 'outline'}
+                  onClick={() => setMenuOpen(v => !v)}
+                  className="text-xs font-medium"
+                >
+                  <Zap className="w-3 h-3 mr-1" />
+                  İdarəetmə
+                  {menuOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                </Button>
+              </div>
+
+              {/* Expanded management menu */}
+              {menuOpen && (
+                <div className="rounded-xl border border-border bg-secondary/60 p-3 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Masa İdarəetməsi</p>
+
+                  {/* Extend */}
+                  <button
+                    onClick={() => { onExtend(table, session); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20">
+                      <Plus className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground">Vaxt Əlavə Et</p>
+                      <p className="text-[10px] text-muted-foreground">Sessiyanı uzat</p>
+                    </div>
+                  </button>
+
+                  {/* Order */}
+                  <button
+                    onClick={() => { onOrder(table, session); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-accent/40 hover:bg-accent/5 transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20">
+                      <Coffee className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground">Məhsul Sifariş Et</p>
+                      <p className="text-[10px] text-muted-foreground">Yemək & içki əlavə et</p>
+                    </div>
+                  </button>
+
+                  {/* Restart */}
+                  <button
+                    onClick={() => { onRestart(table); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-yellow-500/40 hover:bg-yellow-500/5 transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20">
+                      <RotateCcw className="w-4 h-4 text-yellow-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground">Uzaqdan Restart</p>
+                      <p className="text-[10px] text-muted-foreground">Cihazı yenidən başlat</p>
+                    </div>
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
