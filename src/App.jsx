@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import SalonLayout from './pages/SalonLayout';
 import Reservations from './pages/Reservations';
 import CustomerPanel from './pages/CustomerPanel';
+import SupabaseProjects from './pages/SupabaseProjects';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
         <Route path="/products" element={<Products />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/supabase-projects" element={<SupabaseProjects />} />
       </Route>
       <Route path="/customer" element={<CustomerPanel />} />
       <Route path="*" element={<PageNotFound />} />
