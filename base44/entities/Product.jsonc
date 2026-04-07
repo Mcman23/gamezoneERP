@@ -18,7 +18,11 @@
     },
     "price": {
       "type": "number",
-      "description": "Qiym\u0259ti (AZN)"
+      "description": "Sat\u0131\u015f qiym\u0259ti (AZN)"
+    },
+    "purchase_price": {
+      "type": "number",
+      "description": "Al\u0131\u015f qiym\u0259ti (AZN)"
     },
     "in_stock": {
       "type": "boolean",
@@ -33,7 +37,7 @@
     "low_stock_threshold": {
       "type": "number",
       "default": 5,
-      "description": "Kritik stok s\u0259viyy\u0259si (bu h\u0259dd\u0259 \u00e7atd\u0131qda x\u0259b\u0259rdarl\u0131q)"
+      "description": "Kritik stok s\u0259viyy\u0259si"
     },
     "image_url": {
       "type": "string",

@@ -10,10 +10,11 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import SalonLayout from './pages/SalonLayout';
 import Reservations from './pages/Reservations';
 import CustomerPanel from './pages/CustomerPanel';
 import SupabaseProjects from './pages/SupabaseProjects';
+import Inventory from './pages/Inventory';
+import AdminPanel from './pages/AdminPanel';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -43,11 +44,13 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/salon-layout" element={<SalonLayout />} />
+
         <Route path="/reservations" element={<Reservations />} />
         <Route path="/products" element={<Products />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/admin" element={<AdminPanel />} />
         <Route path="/supabase-projects" element={<SupabaseProjects />} />
       </Route>
       <Route path="/customer" element={<CustomerPanel />} />

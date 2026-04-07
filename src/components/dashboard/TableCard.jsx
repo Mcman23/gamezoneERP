@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, Gamepad2, Play, Square, RotateCcw, Power, Coffee, Clock, Plus, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { Monitor, Gamepad2, Play, Square, RotateCcw, Power, Coffee, Clock, Plus, ChevronDown, ChevronUp, Zap, ArrowRightLeft, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function formatTime(totalSeconds) {
@@ -13,7 +13,7 @@ function formatTime(totalSeconds) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export default function TableCard({ table, session, onStart, onStop, onRestart, onShutdown, onExtend, onOrder }) {
+export default function TableCard({ table, session, onStart, onStop, onRestart, onShutdown, onExtend, onOrder, onMove, onMerge }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [remaining, setRemaining] = useState(null);
   const [elapsedSecs, setElapsedSecs] = useState(0);
@@ -194,6 +194,34 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
                     <div className="text-left">
                       <p className="text-sm font-semibold text-foreground">Məhsul Sifariş Et</p>
                       <p className="text-[10px] text-muted-foreground">Yemək & içki əlavə et</p>
+                    </div>
+                  </button>
+
+                  {/* Move table */}
+                  <button
+                onClick={() => {onMove && onMove(table);setMenuOpen(false);}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-blue-400/40 hover:bg-blue-400/5 transition-all group">
+                
+                    <div className="w-8 h-8 rounded-lg bg-blue-400/10 flex items-center justify-center group-hover:bg-blue-400/20">
+                      <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground">Masa Köçür</p>
+                      <p className="text-[10px] text-muted-foreground">Sessiyanı başqa masaya apar</p>
+                    </div>
+                  </button>
+
+                  {/* Merge table */}
+                  <button
+                onClick={() => {onMerge && onMerge(table);setMenuOpen(false);}}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-purple-400/40 hover:bg-purple-400/5 transition-all group">
+                
+                    <div className="w-8 h-8 rounded-lg bg-purple-400/10 flex items-center justify-center group-hover:bg-purple-400/20">
+                      <Link2 className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground">Masaları Birləşdir</p>
+                      <p className="text-[10px] text-muted-foreground">Başqa masa ilə birləşdir</p>
                     </div>
                   </button>
 

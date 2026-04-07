@@ -5,6 +5,22 @@ import { AlertTriangle, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function playBeep(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type === 'danger' ? 'sawtooth' : 'sine';
+    osc.frequency.setValueAtTime(type === 'danger' ? 880 : 660, ctx.currentTime);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.6);
+  } catch {}
+}
+
 export default function NotificationSystem() {
   const [notifications, setNotifications] = useState([]);
   const notifiedRef = useRef(new Set());
@@ -12,7 +28,7 @@ export default function NotificationSystem() {
   const { data: sessions = [] } = useQuery({
     queryKey: ['active-sessions-notify'],
     queryFn: () => base44.entities.Session.filter({ status: 'active' }),
-    refetchInterval: 30000,
+    refetchInterval: 15000,
   });
 
   useEffect(() => {
@@ -20,8 +36,7 @@ export default function NotificationSystem() {
     sessions.forEach(session => {
       if (!session.end_time) return;
       const endTime = new Date(session.end_time);
-      const diffMs = endTime - now;
-      const diffMin = diffMs / 60000;
+      const diffMin = (endTime - now) / 60000;
 
       if (diffMin <= 10 && diffMin > 5 && !notifiedRef.current.has(`${session.id}-10`)) {
         notifiedRef.current.add(`${session.id}-10`);
@@ -36,6 +51,7 @@ export default function NotificationSystem() {
 
       if (diffMin <= 5 && diffMin > 0 && !notifiedRef.current.has(`${session.id}-5`)) {
         notifiedRef.current.add(`${session.id}-5`);
+        playBeep('danger');
         setNotifications(prev => [...prev, {
           id: `${session.id}-5`,
           table: session.table_name,
@@ -47,6 +63,7 @@ export default function NotificationSystem() {
 
       if (diffMin <= 0 && !notifiedRef.current.has(`${session.id}-0`)) {
         notifiedRef.current.add(`${session.id}-0`);
+        playBeep('danger');
         setNotifications(prev => [...prev, {
           id: `${session.id}-0`,
           table: session.table_name,
@@ -88,16 +105,11 @@ export default function NotificationSystem() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground text-sm">
-                  {n.table}
-                </p>
+                <p className="font-semibold text-foreground text-sm">{n.table}</p>
                 <p className={`text-xs mt-0.5 ${
                   n.type === 'danger' || n.type === 'expired' ? 'text-destructive' : 'text-yellow-500'
                 }`}>
-                  {n.type === 'expired'
-                    ? 'Vaxt bitdi!'
-                    : `Vaxtın bitmə­sinə ${n.minutes} dəq qalıb!`
-                  }
+                  {n.type === 'expired' ? 'Vaxt bitdi!' : `Vaxtın bitməsinə ${n.minutes} dəq qalıb!`}
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => dismiss(n.id)}>

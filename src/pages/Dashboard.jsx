@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
-import { Monitor, Gamepad2, Clock, DollarSign } from 'lucide-react';
+import { Monitor, Gamepad2 } from 'lucide-react';
 import { toast } from 'sonner';
 import TableCard from '../components/dashboard/TableCard';
 import StartSessionDialog from '../components/dashboard/StartSessionDialog';
@@ -10,6 +10,8 @@ import StopSessionDialog from '../components/dashboard/StopSessionDialog';
 import ExtendSessionDialog from '../components/dashboard/ExtendSessionDialog';
 import OrderDialog from '../components/dashboard/OrderDialog';
 import RemoteControlDialog from '../components/dashboard/RemoteControlDialog';
+import MoveTableDialog from '../components/dashboard/MoveTableDialog';
+import MergeTableDialog from '../components/dashboard/MergeTableDialog';
 import DashboardStats from '../components/dashboard/DashboardStats';
 
 export default function Dashboard() {
@@ -21,7 +23,8 @@ export default function Dashboard() {
   const [extendDialog, setExtendDialog] = useState({ open: false, table: null, session: null });
   const [orderDialog, setOrderDialog] = useState({ open: false, table: null, session: null });
   const [remoteDialog, setRemoteDialog] = useState({ open: false, table: null });
-
+  const [moveDialog, setMoveDialog] = useState({ open: false, table: null });
+  const [mergeDialog, setMergeDialog] = useState({ open: false, table: null });
   const [filterType, setFilterType] = useState('all');
 
   const { data: tables = [], isLoading: tablesLoading } = useQuery({
@@ -40,7 +43,6 @@ export default function Dashboard() {
 
   const filteredTables = filterType === 'all' ? tables : tables.filter(t => t.type === filterType);
 
-  // Start session
   const startSession = async (table, durationMinutes) => {
     const now = new Date();
     const isUnlimited = durationMinutes === null;
@@ -62,18 +64,13 @@ export default function Dashboard() {
       is_unlimited: isUnlimited,
     });
 
-    await base44.entities.GameTable.update(table.id, {
-      status: 'occupied',
-      current_session_id: session.id,
-    });
-
+    await base44.entities.GameTable.update(table.id, { status: 'occupied', current_session_id: session.id });
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
     toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəqiqə'}`);
   };
 
-  // Stop session
   const stopSession = async (table, session, paymentMethod = 'cash', elapsedMinutes = null) => {
     const isUnlimited = session.is_unlimited;
     const actualSessionCost = isUnlimited
@@ -89,10 +86,7 @@ export default function Dashboard() {
       paid: true,
       payment_method: paymentMethod,
     });
-    await base44.entities.GameTable.update(table.id, {
-      status: 'available',
-      current_session_id: '',
-    });
+    await base44.entities.GameTable.update(table.id, { status: 'available', current_session_id: '' });
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
@@ -100,7 +94,6 @@ export default function Dashboard() {
     toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼ (${methodLabel})`);
   };
 
-  // Extend session
   const extendSession = async (table, session, extraMinutes) => {
     const newEnd = new Date(new Date(session.end_time).getTime() + extraMinutes * 60000);
     const extraCost = (extraMinutes / 60) * table.hourly_rate;
@@ -118,7 +111,6 @@ export default function Dashboard() {
     toast.success(`${table.name} vaxtı ${extraMinutes} dəq uzadıldı`);
   };
 
-  // Add order
   const addOrder = async (table, session, items, totalAmount) => {
     await base44.entities.Order.create({
       session_id: session.id,
@@ -128,25 +120,45 @@ export default function Dashboard() {
       total_amount: totalAmount,
       status: 'delivered',
     });
-
     const newOrdersCost = (session.orders_cost || 0) + totalAmount;
     await base44.entities.Session.update(session.id, {
       orders_cost: parseFloat(newOrdersCost.toFixed(2)),
       total_cost: parseFloat(((session.session_cost || 0) + newOrdersCost).toFixed(2)),
     });
-
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
     toast.success(`${table.name} sifarişi əlavə edildi — ${totalAmount.toFixed(2)} ₼`);
   };
 
-  // Remote control handlers
-  const handleRestart = (table) => {
-    setRemoteDialog({ open: true, table });
+  const moveSession = async (sourceTable, targetTable) => {
+    const session = sessionMap[sourceTable.id];
+    if (!session) return;
+    await base44.entities.Session.update(session.id, { table_id: targetTable.id, table_name: targetTable.name });
+    await base44.entities.GameTable.update(sourceTable.id, { status: 'available', current_session_id: '' });
+    await base44.entities.GameTable.update(targetTable.id, { status: 'occupied', current_session_id: session.id });
+    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
+    toast.success(`Sessiya ${sourceTable.name} → ${targetTable.name} köçürüldü`);
   };
 
-  const handleShutdown = (table) => {
-    setRemoteDialog({ open: true, table });
+  const mergeSession = async (sourceTable, targetTable, targetSession) => {
+    const sourceSession = sessionMap[sourceTable.id];
+    if (!sourceSession) return;
+    const mergedOrdersCost = (targetSession.orders_cost || 0) + (sourceSession.orders_cost || 0);
+    const mergedSessionCost = (targetSession.session_cost || 0) + (sourceSession.session_cost || 0);
+    await base44.entities.Session.update(targetSession.id, {
+      orders_cost: mergedOrdersCost,
+      session_cost: mergedSessionCost,
+      total_cost: mergedOrdersCost + mergedSessionCost,
+    });
+    await base44.entities.Session.update(sourceSession.id, { status: 'completed', paid: true, payment_method: 'merged' });
+    await base44.entities.GameTable.update(sourceTable.id, { status: 'available', current_session_id: '' });
+    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
+    toast.success(`${sourceTable.name} → ${targetTable.name} birləşdirildi`);
   };
+
+  const handleRestart = (table) => setRemoteDialog({ open: true, table });
+  const handleShutdown = (table) => setRemoteDialog({ open: true, table });
 
   if (tablesLoading) {
     return (
@@ -166,8 +178,6 @@ export default function Dashboard() {
             Salam, {user?.full_name || 'İstifadəçi'} — {user?.role === 'admin' ? 'Yönətici' : 'Kassir'}
           </p>
         </div>
-
-        {/* Filter */}
         <div className="flex gap-2">
           {[
             { key: 'all', label: 'Hamısı', icon: null },
@@ -190,10 +200,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats */}
       <DashboardStats tables={tables} activeSessions={activeSessions} />
 
-      {/* Tables Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredTables.map(table => (
           <TableCard
@@ -206,6 +214,8 @@ export default function Dashboard() {
             onShutdown={handleShutdown}
             onExtend={(t, s) => setExtendDialog({ open: true, table: t, session: s })}
             onOrder={(t, s) => setOrderDialog({ open: true, table: t, session: s })}
+            onMove={(t) => setMoveDialog({ open: true, table: t })}
+            onMerge={(t) => setMergeDialog({ open: true, table: t })}
           />
         ))}
       </div>
@@ -218,7 +228,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Dialogs */}
       <StartSessionDialog
         open={startDialog.open}
         onOpenChange={(v) => setStartDialog(s => ({ ...s, open: v }))}
@@ -250,6 +259,22 @@ export default function Dashboard() {
         open={remoteDialog.open}
         onOpenChange={(v) => setRemoteDialog(s => ({ ...s, open: v }))}
         table={remoteDialog.table}
+      />
+      <MoveTableDialog
+        open={moveDialog.open}
+        onOpenChange={(v) => setMoveDialog(s => ({ ...s, open: v }))}
+        sourceTable={moveDialog.table}
+        tables={tables}
+        sessionMap={sessionMap}
+        onConfirm={(target) => moveSession(moveDialog.table, target)}
+      />
+      <MergeTableDialog
+        open={mergeDialog.open}
+        onOpenChange={(v) => setMergeDialog(s => ({ ...s, open: v }))}
+        sourceTable={mergeDialog.table}
+        tables={tables}
+        sessionMap={sessionMap}
+        onConfirm={(target, targetSession) => mergeSession(mergeDialog.table, target, targetSession)}
       />
     </div>
   );

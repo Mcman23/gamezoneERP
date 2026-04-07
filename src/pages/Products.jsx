@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Coffee, GlassWater, Cookie, Package, AlertTriangle, PackageX, TrendingDown, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Coffee, GlassWater, Cookie, Package, AlertTriangle, PackageX, TrendingDown, RotateCcw, Search, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import StockBadge from '@/components/products/StockBadge';
 
@@ -17,9 +17,14 @@ const categoryLabels = { yemek: 'Yemək', icki: 'İçki', atistirmalik: 'Atışt
 const categoryIcons = { yemek: Coffee, icki: GlassWater, atistirmalik: Cookie, diger: Package };
 
 const defaultForm = {
-  name: '', category: 'yemek', price: '',
+  name: '', category: 'yemek', price: '', purchase_price: '',
   in_stock: true, stock_quantity: 0, low_stock_threshold: 5,
 };
+
+function calcMargin(salePrice, purchasePrice) {
+  if (!purchasePrice || purchasePrice <= 0) return null;
+  return ((salePrice - purchasePrice) / purchasePrice * 100).toFixed(1);
+}
 
 export default function Products() {
   const queryClient = useQueryClient();
@@ -29,6 +34,7 @@ export default function Products() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const [filterTab, setFilterTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
@@ -42,6 +48,7 @@ export default function Products() {
       name: product.name,
       category: product.category,
       price: product.price.toString(),
+      purchase_price: product.purchase_price?.toString() || '',
       in_stock: product.in_stock !== false,
       stock_quantity: product.stock_quantity ?? 0,
       low_stock_threshold: product.low_stock_threshold ?? 5,
@@ -54,6 +61,7 @@ export default function Products() {
     const data = {
       ...form,
       price: parseFloat(form.price),
+      purchase_price: form.purchase_price ? parseFloat(form.purchase_price) : null,
       stock_quantity: parseInt(form.stock_quantity) || 0,
       low_stock_threshold: parseInt(form.low_stock_threshold) || 5,
     };
@@ -88,7 +96,6 @@ export default function Products() {
     setRestockAmount(10);
   };
 
-  // Stats
   const totalProducts = products.length;
   const outOfStock = products.filter(p => (p.stock_quantity ?? 0) === 0 && p.in_stock !== false);
   const lowStock = products.filter(p => {
@@ -97,14 +104,18 @@ export default function Products() {
     return qty > 0 && qty <= threshold;
   });
 
-  // Filter
-  const filtered = filterTab === 'all'
-    ? products
-    : filterTab === 'low'
-      ? lowStock
-      : filterTab === 'out'
-        ? outOfStock
-        : products.filter(p => p.category === filterTab);
+  const filtered = useMemo(() => {
+    let base = products;
+    if (filterTab === 'low') base = lowStock;
+    else if (filterTab === 'out') base = outOfStock;
+    else if (filterTab !== 'all') base = products.filter(p => p.category === filterTab);
+
+    if (searchQuery.length >= 2) {
+      const q = searchQuery.toLowerCase();
+      base = base.filter(p => p.name.toLowerCase().includes(q));
+    }
+    return base;
+  }, [products, filterTab, searchQuery, lowStock, outOfStock]);
 
   const grouped = filtered.reduce((acc, p) => {
     const cat = p.category || 'diger';
@@ -118,7 +129,7 @@ export default function Products() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Məhsullar</h1>
-          <p className="text-sm text-muted-foreground mt-1">Stok idarəsi və qiymətlər</p>
+          <p className="text-sm text-muted-foreground mt-1">Stok idarəsi, alış/satış qiymətləri və mənfəət</p>
         </div>
         <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <Plus className="w-4 h-4 mr-1.5" /> Əlavə et
@@ -138,10 +149,7 @@ export default function Products() {
             </div>
           </div>
         </Card>
-        <Card
-          className="p-4 border-yellow-500/30 bg-yellow-500/5 cursor-pointer hover:bg-yellow-500/10 transition-colors"
-          onClick={() => setFilterTab(f => f === 'low' ? 'all' : 'low')}
-        >
+        <Card className="p-4 border-yellow-500/30 bg-yellow-500/5 cursor-pointer hover:bg-yellow-500/10 transition-colors" onClick={() => setFilterTab(f => f === 'low' ? 'all' : 'low')}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-yellow-500/10 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-yellow-500" />
@@ -152,10 +160,7 @@ export default function Products() {
             </div>
           </div>
         </Card>
-        <Card
-          className="p-4 border-destructive/30 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors"
-          onClick={() => setFilterTab(f => f === 'out' ? 'all' : 'out')}
-        >
+        <Card className="p-4 border-destructive/30 bg-destructive/5 cursor-pointer hover:bg-destructive/10 transition-colors" onClick={() => setFilterTab(f => f === 'out' ? 'all' : 'out')}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center">
               <PackageX className="w-5 h-5 text-destructive" />
@@ -168,29 +173,40 @@ export default function Products() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { key: 'all', label: 'Hamısı' },
-          { key: 'yemek', label: 'Yemək' },
-          { key: 'icki', label: 'İçki' },
-          { key: 'atistirmalik', label: 'Atıştırmalıq' },
-          { key: 'diger', label: 'Digər' },
-          { key: 'low', label: '⚠ Az stok' },
-          { key: 'out', label: '✕ Bitib' },
-        ].map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilterTab(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filterTab === f.key
-                ? 'bg-primary/10 text-primary border border-primary/20'
-                : 'bg-secondary text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Search + Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Məhsul axtar... (2+ hərf)"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 bg-secondary border-border"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'all', label: 'Hamısı' },
+            { key: 'yemek', label: 'Yemək' },
+            { key: 'icki', label: 'İçki' },
+            { key: 'atistirmalik', label: 'Atıştırmalıq' },
+            { key: 'diger', label: 'Digər' },
+            { key: 'low', label: '⚠ Az stok' },
+            { key: 'out', label: '✕ Bitib' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilterTab(f.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                filterTab === f.key
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Product Groups */}
@@ -207,6 +223,7 @@ export default function Products() {
               {items.map(product => {
                 const isLow = (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= (product.low_stock_threshold ?? 5);
                 const isOut = (product.stock_quantity ?? 0) === 0 && product.in_stock !== false;
+                const margin = calcMargin(product.price, product.purchase_price);
                 return (
                   <Card
                     key={product.id}
@@ -219,7 +236,18 @@ export default function Products() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground text-sm truncate">{product.name}</p>
-                        <p className="text-primary font-bold text-sm">{product.price.toFixed(2)} ₼</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <p className="text-primary font-bold text-sm">{product.price.toFixed(2)} ₼</p>
+                          {product.purchase_price && (
+                            <p className="text-xs text-muted-foreground">alış: {product.purchase_price.toFixed(2)} ₼</p>
+                          )}
+                        </div>
+                        {margin !== null && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <TrendingUp className="w-3 h-3 text-green-500" />
+                            <span className="text-xs text-green-500 font-semibold">%{margin} mənfəət</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-1 ml-2">
                         <Button size="icon" variant="ghost" className="h-7 w-7" title="Stok əlavə et" onClick={() => { setRestockDialog(product); setRestockAmount(10); }}>
@@ -236,14 +264,8 @@ export default function Products() {
                     <StockBadge product={product} />
                     <div className="mt-2 w-full bg-secondary rounded-full h-1.5 overflow-hidden">
                       <div
-                        className={`h-1.5 rounded-full transition-all ${
-                          isOut ? 'w-0'
-                            : isLow ? 'bg-yellow-500'
-                              : 'bg-primary'
-                        }`}
-                        style={{
-                          width: `${Math.min(100, ((product.stock_quantity ?? 0) / Math.max(20, (product.stock_quantity ?? 0))) * 100)}%`
-                        }}
+                        className={`h-1.5 rounded-full transition-all ${isOut ? 'w-0' : isLow ? 'bg-yellow-500' : 'bg-primary'}`}
+                        style={{ width: `${Math.min(100, ((product.stock_quantity ?? 0) / Math.max(20, (product.stock_quantity ?? 0))) * 100)}%` }}
                       />
                     </div>
                   </Card>
@@ -284,10 +306,24 @@ export default function Products() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Qiymət (₼)</Label>
-              <Input type="number" step="0.1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="0.00" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Alış qiyməti (₼)</Label>
+                <Input type="number" step="0.1" value={form.purchase_price} onChange={e => setForm(f => ({ ...f, purchase_price: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="0.00" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Satış qiyməti (₼)</Label>
+                <Input type="number" step="0.1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="0.00" />
+              </div>
             </div>
+            {form.price && form.purchase_price && parseFloat(form.purchase_price) > 0 && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                <span className="text-xs text-green-500 font-semibold">
+                  Mənfəət: %{calcMargin(parseFloat(form.price), parseFloat(form.purchase_price))}
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs text-muted-foreground">Stok miqdarı</Label>
