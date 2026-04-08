@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import Sidebar from './Sidebar';
+import { useSubscription } from '@/hooks/useSubscription';
+import SubscriptionRequired from '@/pages/SubscriptionRequired';
 import MobileNav from './MobileNav';
 import NotificationSystem from '../notifications/NotificationSystem';
 import { cn } from '@/lib/utils';
@@ -9,10 +11,16 @@ import { cn } from '@/lib/utils';
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(null);
+  const { hasSubscription, isLoading: subLoading } = useSubscription(user);
 
   useEffect(() => {
     base44.auth.me().then(setUser);
   }, []);
+
+  // Block admin users without active subscription
+  if (user?.role === 'admin' && !subLoading && !hasSubscription) {
+    return <SubscriptionRequired />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

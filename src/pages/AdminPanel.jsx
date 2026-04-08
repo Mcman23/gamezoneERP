@@ -6,11 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ShieldAlert, Trash2, AlertTriangle, Database, Clock, ShoppingCart, CalendarDays, Monitor, Lock, Unlock, PowerOff, RotateCcw, Activity } from 'lucide-react';
+import { ShieldAlert, Trash2, AlertTriangle, Database, Clock, ShoppingCart, CalendarDays, Monitor, Lock, Unlock, PowerOff, RotateCcw, Activity, Crown, Plus, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 
 const CONFIRM_TEXT = 'BÜTÜN MƏLUMATLARI SİL';
+
+const PLAN_PRICES = { monthly: 29.99, yearly: 299 };
+const PLAN_DAYS = { monthly: 30, yearly: 365 };
 
 export default function AdminPanel() {
   const { user } = useOutletContext();
@@ -19,8 +24,13 @@ export default function AdminPanel() {
   const [confirmInput, setConfirmInput] = useState('');
   const [step, setStep] = useState(1);
   const [deleting, setDeleting] = useState(false);
+  const [subDialog, setSubDialog] = useState(false);
+  const [subForm, setSubForm] = useState({ user_id: '', user_email: '', user_name: '', plan: 'monthly', price: '', note: '' });
+  const [savingSub, setSavingSub] = useState(false);
 
   const { data: sessions = [] } = useQuery({ queryKey: ['all-sessions-admin'], queryFn: () => base44.entities.Session.list() });
+  const { data: allSubscriptions = [] } = useQuery({ queryKey: ['all-subscriptions'], queryFn: () => base44.entities.Subscription.list('-created_date', 100) });
+  const { data: allUsers = [] } = useQuery({ queryKey: ['all-users-admin'], queryFn: () => base44.entities.User.list() });
   const { data: orders = [] } = useQuery({ queryKey: ['all-orders-admin'], queryFn: () => base44.entities.Order.list() });
   const { data: tables = [] } = useQuery({ queryKey: ['tables'], queryFn: () => base44.entities.GameTable.list() });
   const { data: expenses = [] } = useQuery({ queryKey: ['expenses-admin'], queryFn: () => base44.entities.Expense.list() });
@@ -50,6 +60,35 @@ export default function AdminPanel() {
     setDeleteDialog(false);
     setConfirmInput('');
     setStep(1);
+  };
+
+  const handleAddSubscription = async () => {
+    setSavingSub(true);
+    const start = new Date().toISOString().split('T')[0];
+    const end = new Date(Date.now() + PLAN_DAYS[subForm.plan] * 86400000).toISOString().split('T')[0];
+    await base44.entities.Subscription.create({
+      user_id: subForm.user_id,
+      user_email: subForm.user_email,
+      user_name: subForm.user_name,
+      plan: subForm.plan,
+      status: 'active',
+      start_date: start,
+      end_date: end,
+      price: parseFloat(subForm.price) || PLAN_PRICES[subForm.plan],
+      note: subForm.note,
+    });
+    queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    toast.success('Abunəlik aktivləşdirildi');
+    setSavingSub(false);
+    setSubDialog(false);
+  };
+
+  const handleCancelSub = async (sub) => {
+    await base44.entities.Subscription.update(sub.id, { status: 'cancelled' });
+    queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    toast.success('Abunəlik ləğv edildi');
   };
 
   const handleTableAction = async (table, action) => {
@@ -125,6 +164,35 @@ export default function AdminPanel() {
         </div>
       </Card>
 
+      {/* Subscription Management */}
+      <Card className="border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Abunəlik İdarəetməsi</h3>
+          <Button size="sm" onClick={() => { setSubForm({ user_id: '', user_email: '', user_name: '', plan: 'monthly', price: '', note: '' }); setSubDialog(true); }} className="gap-1 text-xs">
+            <Plus className="w-3.5 h-3.5" /> Abunəlik əlavə et
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {allSubscriptions.length === 0 && <p className="text-sm text-muted-foreground">Hələ abunəlik yoxdur</p>}
+          {allSubscriptions.map(sub => {
+            const today = new Date().toISOString().split('T')[0];
+            const isActive = sub.status === 'active' && sub.end_date >= today;
+            return (
+              <div key={sub.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-secondary/30">
+                <div>
+                  <p className="font-medium text-foreground text-sm">{sub.user_name || sub.user_email}</p>
+                  <p className="text-xs text-muted-foreground">{sub.plan === 'monthly' ? 'Aylıq' : 'İllik'} • {sub.end_date} qədər</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isActive ? 'default' : 'secondary'} className="text-xs">{isActive ? 'AKTİV' : sub.status === 'cancelled' ? 'LƏĞVEDİLMİŞ' : 'BİTİB'}</Badge>
+                  {isActive && <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleCancelSub(sub)}><X className="w-3.5 h-3.5" /></Button>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* Danger zone */}
       <Card className="border-destructive/30 bg-destructive/5 p-5">
         <div className="flex items-start gap-3 mb-4">
@@ -138,6 +206,47 @@ export default function AdminPanel() {
           <Trash2 className="w-4 h-4" /> Bütün məlumatları sil
         </Button>
       </Card>
+
+      {/* Add Subscription Dialog */}
+      <Dialog open={subDialog} onOpenChange={setSubDialog}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader><DialogTitle className="text-foreground flex items-center gap-2"><Crown className="w-4 h-4 text-primary" /> Abunəlik Əlavə Et</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">İstifadəçi seç</Label>
+              <Select value={subForm.user_id} onValueChange={v => {
+                const u = allUsers.find(u => u.id === v);
+                setSubForm(f => ({ ...f, user_id: v, user_email: u?.email || '', user_name: u?.full_name || '' }));
+              }}>
+                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue placeholder="İstifadəçi..." /></SelectTrigger>
+                <SelectContent>{allUsers.filter(u => u.role === 'admin').map(u => <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.email})</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Plan</Label>
+              <Select value={subForm.plan} onValueChange={v => setSubForm(f => ({ ...f, plan: v, price: String(PLAN_PRICES[v]) }))}>
+                <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Aylıq — 29.99 AZN</SelectItem>
+                  <SelectItem value="yearly">İllik — 299 AZN</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Məbləğ (AZN)</Label>
+              <Input type="number" value={subForm.price} onChange={e => setSubForm(f => ({ ...f, price: e.target.value }))} placeholder={String(PLAN_PRICES[subForm.plan])} className="bg-secondary border-border mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Qeyd</Label>
+              <Input value={subForm.note} onChange={e => setSubForm(f => ({ ...f, note: e.target.value }))} placeholder="İstəyə bağlı" className="bg-secondary border-border mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubDialog(false)}>Ləğv et</Button>
+            <Button onClick={handleAddSubscription} disabled={!subForm.user_id || savingSub} className="bg-primary hover:bg-primary/90 text-primary-foreground">{savingSub ? 'Saxlanır...' : 'Aktivləşdir'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteDialog} onOpenChange={(v) => { if (!deleting) { setDeleteDialog(v); setStep(1); setConfirmInput(''); } }}>
         <DialogContent className="bg-card border-destructive/30 max-w-sm">

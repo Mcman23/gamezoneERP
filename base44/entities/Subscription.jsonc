@@ -1,0 +1,61 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "\u0130stifad\u0259\u00e7i ID-si"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "\u0130stifad\u0259\u00e7i emaili"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "\u0130stifad\u0259\u00e7i ad\u0131"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "yearly"
+      ],
+      "description": "Abun\u0259lik plan\u0131"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Abun\u0259lik statusu"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Ba\u015flama tarixi"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Bitm\u0259 tarixi"
+    },
+    "price": {
+      "type": "number",
+      "description": "\u00d6d\u0259nil\u0259n m\u0259bl\u0259\u011f (AZN)"
+    },
+    "note": {
+      "type": "string",
+      "description": "Qeyd"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email",
+    "plan",
+    "start_date",
+    "end_date"
+  ]
+}
