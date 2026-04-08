@@ -26,8 +26,8 @@ export default function AppLayout() {
     }
   }, [user, location.pathname]);
 
-  // Block admin users without active subscription (owner is exempt)
-  if (user?.role === 'admin' && !subLoading && !hasSubscription) {
+  // Block admin users without active subscription (only after user is loaded and subscription check is done)
+  if (user && user.role === 'admin' && !subLoading && !hasSubscription) {
     return <SubscriptionRequired />;
   }
 
