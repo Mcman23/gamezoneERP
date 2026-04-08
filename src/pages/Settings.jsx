@@ -68,8 +68,11 @@ export default function Settings() {
     setForm(newForm);
   };
 
+  // normalize: old tables may use `type` field instead of `category`
+  const getCategory = (t) => t.category || (t.type === 'pc' ? 'computer' : t.type) || 'computer';
+
   const grouped = {};
-  ['computer', 'playstation', 'cabinet', 'simulator'].forEach(cat => { grouped[cat] = tables.filter(t => t.category === cat); });
+  ['computer', 'playstation', 'cabinet', 'simulator'].forEach(cat => { grouped[cat] = tables.filter(t => getCategory(t) === cat); });
 
   return (
     <div className="space-y-6">
@@ -93,6 +96,7 @@ export default function Settings() {
       {Object.entries(grouped).map(([cat, items]) => {
         if (items.length === 0) return null;
         const Icon = catIcons[cat] || Monitor;
+
         return (
           <div key={cat}>
             <div className="flex items-center gap-2 mb-3">
@@ -110,7 +114,7 @@ export default function Settings() {
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{table.name}</p>
-                        <p className="text-xs text-muted-foreground">{table.code} • {table.hourly_rate} ₼/saat {table.ps_model !== 'none' && `• ${table.ps_model?.toUpperCase()}`}</p>
+                        <p className="text-xs text-muted-foreground">{table.code || table.id?.slice(-4)} • {table.hourly_rate} ₼/saat {table.ps_model && table.ps_model !== 'none' ? `• ${table.ps_model?.toUpperCase()}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex gap-1">
