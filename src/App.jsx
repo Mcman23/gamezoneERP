@@ -7,13 +7,13 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
+import Tables from './pages/Tables';
 import Products from './pages/Products';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import Reservations from './pages/Reservations';
-import CustomerPanel from './pages/CustomerPanel';
-import SupabaseProjects from './pages/SupabaseProjects';
 import Inventory from './pages/Inventory';
+import Expenses from './pages/Expenses';
+import CashierPanel from './pages/CashierPanel';
 import AdminPanel from './pages/AdminPanel';
 
 const AuthenticatedApp = () => {
@@ -44,16 +44,15 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-
-        <Route path="/reservations" element={<Reservations />} />
+        <Route path="/tables" element={<Tables />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/cashier" element={<CashierPanel />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/inventory" element={<Inventory />} />
         <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/supabase-projects" element={<SupabaseProjects />} />
       </Route>
-      <Route path="/customer" element={<CustomerPanel />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

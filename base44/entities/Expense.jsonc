@@ -1,0 +1,52 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "X\u0259rc ba\u015fl\u0131\u011f\u0131"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "staff",
+        "utilities",
+        "service",
+        "marketing",
+        "transport",
+        "purchases",
+        "other"
+      ],
+      "description": "X\u0259rc kateqoriyas\u0131"
+    },
+    "amount": {
+      "type": "number",
+      "description": "M\u0259bl\u0259\u011f (AZN)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tarix"
+    },
+    "note": {
+      "type": "string",
+      "description": "Qeyd"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card",
+        "transfer"
+      ],
+      "default": "cash",
+      "description": "\u00d6d\u0259ni\u015f \u00fcsulu"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "amount",
+    "date"
+  ]
+}

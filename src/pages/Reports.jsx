@@ -83,6 +83,11 @@ export default function Reports() {
     queryFn: () => base44.entities.GameTable.list(),
   });
 
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['all-expenses'],
+    queryFn: () => base44.entities.Expense.list('-created_date', 1000),
+  });
+
   const interval = useMemo(() => getInterval(period, customFrom, customTo), [period, customFrom, customTo]);
 
   const filteredSessions = useMemo(() => {
@@ -107,9 +112,17 @@ export default function Reports() {
     return list;
   }, [orders, interval, searchQuery]);
 
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(e => {
+      try { return isWithinInterval(new Date(e.date || e.created_date), interval); } catch { return false; }
+    });
+  }, [expenses, interval]);
+
   const sessionRevenue = filteredSessions.reduce((s, se) => s + (se.session_cost || 0), 0);
   const orderRevenue = filteredOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
   const totalRevenue = sessionRevenue + orderRevenue;
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const netProfit = totalRevenue - totalExpenses;
   const sessionCount = filteredSessions.length;
   const avgDuration = sessionCount > 0
     ? Math.round(filteredSessions.reduce((s, se) => s + (se.duration_minutes || 0), 0) / sessionCount) : 0;

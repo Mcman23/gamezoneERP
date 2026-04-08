@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Masa ad\u0131"
     },
+    "table_category": {
+      "type": "string",
+      "description": "Masa kateqoriyas\u0131"
+    },
     "start_time": {
       "type": "string",
       "format": "date-time",
@@ -45,6 +49,7 @@
       "type": "string",
       "enum": [
         "active",
+        "paused",
         "completed",
         "cancelled"
       ],
@@ -60,21 +65,31 @@
       "type": "string",
       "enum": [
         "cash",
-        "card"
+        "card",
+        "mixed"
       ],
-      "description": "\u00d6d\u0259ni\u015f \u00fcsulu: nagd v\u0259 ya kart"
+      "description": "\u00d6d\u0259ni\u015f \u00fcsulu"
     },
     "is_unlimited": {
       "type": "boolean",
       "default": false,
       "description": "Limitsiz sessiya rejimi"
+    },
+    "pause_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fasil\u0259 ba\u015flan\u011f\u0131c\u0131"
+    },
+    "total_paused_minutes": {
+      "type": "number",
+      "default": 0,
+      "description": "\u00dcmumi fasil\u0259 m\u00fcdd\u0259ti"
     }
   },
   "required": [
     "table_id",
     "table_name",
     "start_time",
-    "duration_minutes",
     "hourly_rate"
   ]
 }

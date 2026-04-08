@@ -4,29 +4,57 @@
   "properties": {
     "name": {
       "type": "string",
-      "description": "Masan\u0131n ad\u0131 (m\u0259s: PC-1, PS-3)"
+      "description": "Masan\u0131n ad\u0131"
     },
-    "type": {
+    "code": {
+      "type": "string",
+      "description": "Unikal kod (PC1, PS1, CabinPS1, Sim1)"
+    },
+    "category": {
       "type": "string",
       "enum": [
-        "pc",
-        "playstation"
+        "computer",
+        "playstation",
+        "cabinet",
+        "simulator"
       ],
-      "description": "Masa tipi"
+      "description": "Kateqoriya"
+    },
+    "zone": {
+      "type": "string",
+      "enum": [
+        "hall",
+        "cabinet"
+      ],
+      "default": "hall",
+      "description": "Zona: Zal v\u0259 ya Kabinet"
+    },
+    "ps_model": {
+      "type": "string",
+      "enum": [
+        "ps3",
+        "ps4",
+        "ps5",
+        "none"
+      ],
+      "default": "none",
+      "description": "PlayStation modeli"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Saatl\u0131q qiym\u0259t (AZN)"
     },
     "status": {
       "type": "string",
       "enum": [
         "available",
         "occupied",
-        "maintenance"
+        "locked",
+        "maintenance",
+        "offline"
       ],
       "default": "available",
       "description": "Masan\u0131n v\u0259ziyy\u0259ti"
-    },
-    "hourly_rate": {
-      "type": "number",
-      "description": "Saatl\u0131q qiym\u0259t (AZN)"
     },
     "current_session_id": {
       "type": "string",
@@ -34,27 +62,18 @@
     },
     "ip_address": {
       "type": "string",
-      "description": "Cihaz\u0131n IP \u00fcnvan\u0131 (uzaqdan idar\u0259 \u00fc\u00e7\u00fcn)"
+      "description": "Cihaz\u0131n IP \u00fcnvan\u0131"
     },
     "order_number": {
       "type": "number",
       "default": 0,
       "description": "S\u0131ralama n\u00f6mr\u0259si"
-    },
-    "pos_x": {
-      "type": "number",
-      "default": 0,
-      "description": "Salon x\u0259rit\u0259sind\u0259ki X m\u00f6vqeyi (piksel)"
-    },
-    "pos_y": {
-      "type": "number",
-      "default": 0,
-      "description": "Salon x\u0259rit\u0259sind\u0259ki Y m\u00f6vqeyi (piksel)"
     }
   },
   "required": [
     "name",
-    "type",
+    "code",
+    "category",
     "hourly_rate"
   ]
 }

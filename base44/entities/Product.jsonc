@@ -16,6 +16,16 @@
       ],
       "description": "Kateqoriya"
     },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "piece",
+        "gram",
+        "portion"
+      ],
+      "default": "piece",
+      "description": "\u00d6l\u00e7\u00fc vahidi: \u0259d\u0259d, qram, porsiya"
+    },
     "price": {
       "type": "number",
       "description": "Sat\u0131\u015f qiym\u0259ti (AZN)"
