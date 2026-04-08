@@ -7,9 +7,9 @@ import { Clock, Infinity, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { roundCost } from '@/lib/tableConfig';
 
-const PS_RATES = { ps3: 1.5, ps4: 3, ps5: 5 };
+const PS_RATES = { ps3: 3, ps4: 3, ps5: 5 };
 const PS_MODELS = [
-  { key: 'ps3', label: 'PS3', rate: 1.5 },
+  { key: 'ps3', label: 'PS3', rate: 3 },
   { key: 'ps4', label: 'PS4', rate: 3 },
   { key: 'ps5', label: 'PS5', rate: 5 },
 ];
