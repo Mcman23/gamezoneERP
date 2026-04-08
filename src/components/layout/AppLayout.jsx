@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import Sidebar from './Sidebar';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -12,10 +12,19 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const { hasSubscription, isLoading: subLoading } = useSubscription(user);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     base44.auth.me().then(setUser);
   }, []);
+
+  // Redirect owner to /owner panel, away from admin pages
+  useEffect(() => {
+    if (user?.role === 'owner' && location.pathname !== '/owner') {
+      navigate('/owner', { replace: true });
+    }
+  }, [user, location.pathname]);
 
   // Block admin users without active subscription (owner is exempt)
   if (user?.role === 'admin' && !subLoading && !hasSubscription) {

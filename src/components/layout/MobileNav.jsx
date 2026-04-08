@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign } from 'lucide-react';
+import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
+  { path: '/owner', label: 'Owner', icon: Crown, roles: ['owner'] },
   { path: '/', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'user'] },
   { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/cashier', label: 'Kassir', icon: Receipt, roles: ['admin', 'user'] },

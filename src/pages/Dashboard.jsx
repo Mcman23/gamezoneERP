@@ -2,23 +2,25 @@ import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext, Link } from 'react-router-dom';
+import { useClub } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Monitor, Gamepad2, Clock, DollarSign, ShoppingCart, TrendingUp, Activity } from 'lucide-react';
 import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 export default function Dashboard() {
   const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
 
   const todayInterval = useMemo(() => {
     const now = new Date();
     return { start: startOfDay(now), end: endOfDay(now) };
   }, []);
 
-  const { data: tables = [] } = useQuery({ queryKey: ['tables'], queryFn: () => base44.entities.GameTable.list() });
-  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions'], queryFn: () => base44.entities.Session.filter({ status: 'active' }), refetchInterval: 15000 });
-  const { data: completedSessions = [] } = useQuery({ queryKey: ['completed-sessions-dash'], queryFn: () => base44.entities.Session.filter({ status: 'completed' }, '-created_date', 200) });
-  const { data: orders = [] } = useQuery({ queryKey: ['orders-dash'], queryFn: () => base44.entities.Order.list('-created_date', 200) });
-  const { data: expenses = [] } = useQuery({ queryKey: ['expenses-dash'], queryFn: () => base44.entities.Expense.list('-created_date', 200) });
+  const { data: tables = [] } = useQuery({ queryKey: ['tables', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
+  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [], refetchInterval: 15000, enabled: !!clubOwnerId });
+  const { data: completedSessions = [] } = useQuery({ queryKey: ['completed-sessions-dash', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'completed', club_owner_id: clubOwnerId }, '-created_date', 200) : [], enabled: !!clubOwnerId });
+  const { data: orders = [] } = useQuery({ queryKey: ['orders-dash', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Order.filter({ club_owner_id: clubOwnerId }, '-created_date', 200) : [], enabled: !!clubOwnerId });
+  const { data: expenses = [] } = useQuery({ queryKey: ['expenses-dash', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }, '-created_date', 200) : [], enabled: !!clubOwnerId });
 
   const todaySessions = completedSessions.filter(s => { try { return isWithinInterval(new Date(s.created_date), todayInterval); } catch { return false; } });
   const todayOrders = orders.filter(o => { try { return isWithinInterval(new Date(o.created_date), todayInterval); } catch { return false; } });

@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useOutletContext } from 'react-router-dom';
+import { useClub } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,8 @@ import { EXPENSE_CATEGORIES } from '@/lib/tableConfig';
 const defaultForm = { title: '', category: 'other', amount: '', date: format(new Date(), 'yyyy-MM-dd'), note: '', payment_method: 'cash', file_url: '' };
 
 export default function Expenses() {
+  const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -23,8 +27,9 @@ export default function Expenses() {
   const [filterCat, setFilterCat] = useState('all');
 
   const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list('-created_date', 500),
+    queryKey: ['expenses', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }, '-created_date', 500) : [],
+    enabled: !!clubOwnerId,
   });
 
   const resetForm = () => { setForm(defaultForm); setEditing(null); };
@@ -47,17 +52,17 @@ export default function Expenses() {
       await base44.entities.Expense.update(editing.id, data);
       toast.success('Xərc yeniləndi');
     } else {
-      await base44.entities.Expense.create(data);
+      await base44.entities.Expense.create({ ...data, club_owner_id: clubOwnerId });
       toast.success('Xərc əlavə edildi');
     }
-    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['expenses', clubOwnerId] });
     setDialogOpen(false);
     resetForm();
   };
 
   const handleDelete = async (expense) => {
     await base44.entities.Expense.delete(expense.id);
-    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['expenses', clubOwnerId] });
     toast.success('Xərc silindi');
   };
 

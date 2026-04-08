@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
+import { useClub } from '@/hooks/useClub';
 
 const CONFIRM_TEXT = 'BÜTÜN MƏLUMATLARI SİL';
 
@@ -19,6 +20,7 @@ const PLAN_DAYS = { monthly: 30, yearly: 365 };
 
 export default function AdminPanel() {
   const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
   const queryClient = useQueryClient();
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
@@ -28,13 +30,13 @@ export default function AdminPanel() {
   const [subForm, setSubForm] = useState({ user_id: '', user_email: '', user_name: '', plan: 'monthly', price: '', note: '' });
   const [savingSub, setSavingSub] = useState(false);
 
-  const { data: sessions = [] } = useQuery({ queryKey: ['all-sessions-admin'], queryFn: () => base44.entities.Session.list() });
+  const { data: sessions = [] } = useQuery({ queryKey: ['all-sessions-admin', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
   const { data: allSubscriptions = [] } = useQuery({ queryKey: ['all-subscriptions'], queryFn: () => base44.entities.Subscription.list('-created_date', 100) });
   const { data: allUsers = [] } = useQuery({ queryKey: ['all-users-admin'], queryFn: () => base44.entities.User.list() });
-  const { data: orders = [] } = useQuery({ queryKey: ['all-orders-admin'], queryFn: () => base44.entities.Order.list() });
-  const { data: tables = [] } = useQuery({ queryKey: ['tables'], queryFn: () => base44.entities.GameTable.list() });
-  const { data: expenses = [] } = useQuery({ queryKey: ['expenses-admin'], queryFn: () => base44.entities.Expense.list() });
-  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions'], queryFn: () => base44.entities.Session.filter({ status: 'active' }) });
+  const { data: orders = [] } = useQuery({ queryKey: ['all-orders-admin', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Order.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
+  const { data: tables = [] } = useQuery({ queryKey: ['tables', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
+  const { data: expenses = [] } = useQuery({ queryKey: ['expenses-admin', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
+  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
 
   if (user?.role !== 'admin') {
     return (

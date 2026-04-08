@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useOutletContext } from 'react-router-dom';
+import { useClub } from '@/hooks/useClub';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +29,8 @@ function calcMargin(salePrice, purchasePrice) {
 }
 
 export default function Products() {
+  const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [restockDialog, setRestockDialog] = useState(null);
@@ -37,8 +41,9 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list(),
+    queryKey: ['products', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Product.filter({ club_owner_id: clubOwnerId }) : [],
+    enabled: !!clubOwnerId,
   });
 
   const resetForm = () => { setForm(defaultForm); setEditing(null); };
@@ -69,17 +74,17 @@ export default function Products() {
       await base44.entities.Product.update(editing.id, data);
       toast.success('Məhsul yeniləndi');
     } else {
-      await base44.entities.Product.create(data);
+      await base44.entities.Product.create({ ...data, club_owner_id: clubOwnerId });
       toast.success('Məhsul əlavə edildi');
     }
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     setDialogOpen(false);
     resetForm();
   };
 
   const handleDelete = async (product) => {
     await base44.entities.Product.delete(product.id);
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success('Məhsul silindi');
   };
 
@@ -90,7 +95,7 @@ export default function Products() {
       stock_quantity: newQty,
       in_stock: newQty > 0,
     });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${restockDialog.name}: stok +${restockAmount} əlavə edildi (Cəmi: ${newQty})`);
     setRestockDialog(null);
     setRestockAmount(10);
