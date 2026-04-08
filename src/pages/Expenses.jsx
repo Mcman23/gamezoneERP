@@ -8,12 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, DollarSign, Pencil } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Pencil, Paperclip, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { EXPENSE_CATEGORIES } from '@/lib/tableConfig';
 
-const defaultForm = { title: '', category: 'other', amount: '', date: format(new Date(), 'yyyy-MM-dd'), note: '', payment_method: 'cash' };
+const defaultForm = { title: '', category: 'other', amount: '', date: format(new Date(), 'yyyy-MM-dd'), note: '', payment_method: 'cash', file_url: '' };
 
 export default function Expenses() {
   const queryClient = useQueryClient();
@@ -28,6 +28,18 @@ export default function Expenses() {
   });
 
   const resetForm = () => { setForm(defaultForm); setEditing(null); };
+
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, file_url }));
+    setUploading(false);
+    toast.success('Fayl yükləndi');
+  };
 
   const handleSave = async () => {
     const data = { ...form, amount: parseFloat(form.amount) };
@@ -178,6 +190,23 @@ export default function Expenses() {
             <div>
               <Label className="text-xs text-muted-foreground">Qeyd</Label>
               <Input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="İstəyə bağlı" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> Qaimə / Faktura</Label>
+              {form.file_url ? (
+                <div className="mt-1 flex items-center gap-2 bg-secondary rounded-lg p-2">
+                  <a href={form.file_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline flex-1 truncate">Fayl yüklənib</a>
+                  <button onClick={() => setForm(f => ({ ...f, file_url: '' }))} className="text-muted-foreground hover:text-destructive">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className={`mt-1 flex items-center gap-2 border border-dashed border-border rounded-lg p-3 cursor-pointer hover:border-primary/40 transition-colors ${uploading ? 'opacity-50' : ''}`}>
+                  <Paperclip className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{uploading ? 'Yüklənir...' : 'Fayl seç (şəkil, PDF...)'}</span>
+                  <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleFileUpload} disabled={uploading} />
+                </label>
+              )}
             </div>
           </div>
           <DialogFooter>

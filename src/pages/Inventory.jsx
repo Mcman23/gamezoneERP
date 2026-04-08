@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Warehouse, Package, AlertTriangle, PackageX, TrendingUp, Search, Plus, RotateCcw } from 'lucide-react';
+import { Warehouse, Package, AlertTriangle, PackageX, TrendingUp, Search, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Inventory() {
@@ -21,6 +21,15 @@ export default function Inventory() {
     queryKey: ['products'],
     queryFn: () => base44.entities.Product.list(),
   });
+
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const handleDelete = async (product) => {
+    await base44.entities.Product.delete(product.id);
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    toast.success(`${product.name} anbardan silindi`);
+    setDeleteConfirm(null);
+  };
 
   const handleRestock = async () => {
     if (!restockDialog) return;
@@ -189,14 +198,14 @@ export default function Inventory() {
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setRestockDialog(product); setRestockAmount(10); }}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <Plus className="w-3 h-3" /> Alış
-                      </Button>
+                      <div className="flex gap-1 justify-center">
+                        <Button size="sm" variant="outline" onClick={() => { setRestockDialog(product); setRestockAmount(10); }} className="h-7 text-xs gap-1">
+                          <Plus className="w-3 h-3" /> Alış
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(product)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -211,6 +220,25 @@ export default function Inventory() {
           )}
         </div>
       </Card>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(v) => { if (!v) setDeleteConfirm(null); }}>
+        <DialogContent className="bg-card border-border max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Anbardan Sil</DialogTitle>
+          </DialogHeader>
+          {deleteConfirm && (
+            <div className="py-2 space-y-3">
+              <p className="text-sm text-muted-foreground">"<span className="text-foreground font-medium">{deleteConfirm.name}</span>" məhsulunu anbardan silmək istədiyinizdən əminsiniz?</p>
+              <p className="text-xs text-destructive">Bu əməliyyat geri alına bilməz.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Ləğv et</Button>
+            <Button variant="destructive" onClick={() => handleDelete(deleteConfirm)}>Sil</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Restock Dialog */}
       <Dialog open={!!restockDialog} onOpenChange={(v) => { if (!v) setRestockDialog(null); }}>
