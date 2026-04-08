@@ -61,13 +61,13 @@ export function roundCost(value) {
   return Math.round(value * 100) / 100;
 }
 
-// Unlimited session cost: first 60 min at 50%, rest per minute at full rate
+// Unlimited session cost: minimum 30 min charge, then per-minute rate
 export function calcUnlimitedCost(elapsedMinutes, hourlyRate) {
   if (elapsedMinutes <= 0) return 0;
-  const firstHourDiscount = hourlyRate * 0.5; // 50% of hourly for first hour
-  if (elapsedMinutes <= 60) {
-    return roundCost((elapsedMinutes / 60) * firstHourDiscount);
+  const min30Cost = roundCost(hourlyRate / 2); // 30 min = half hourly rate
+  if (elapsedMinutes <= 30) {
+    return min30Cost; // always charge at least 30 min
   }
-  const extraMinutes = elapsedMinutes - 60;
-  return roundCost(firstHourDiscount + (extraMinutes / 60) * hourlyRate);
+  const extraMinutes = elapsedMinutes - 30;
+  return roundCost(min30Cost + (extraMinutes / 60) * hourlyRate);
 }
