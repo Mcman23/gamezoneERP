@@ -5,11 +5,21 @@
     "role": {
       "type": "string",
       "enum": [
+        "owner",
         "admin",
         "user"
       ],
       "default": "user",
-      "description": "\u0130stifad\u0259\u00e7i rolu - admin (y\u00f6n\u0259tim) v\u0259 ya user (kassir)"
+      "description": "\u0130stifad\u0259\u00e7i rolu: owner (sistem sahibi), admin (klub sahibi), user (kassir)"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Kassirin \u0259laq\u0259li oldu\u011fu admin (klub sahibi) ID-si"
+    },
+    "club_name": {
+      "type": "string",
+      "description": "Klub ad\u0131 (yaln\u0131z admin \u00fc\u00e7\u00fcn)"
     }
-  }
+  },
+  "required": []
 }

@@ -16,6 +16,7 @@ import Expenses from './pages/Expenses';
 import CashierPanel from './pages/CashierPanel';
 import AdminPanel from './pages/AdminPanel';
 import DataImport from './pages/DataImport';
+import OwnerPanel from './pages/OwnerPanel';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/import" element={<DataImport />} />
+        <Route path="/owner" element={<OwnerPanel />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

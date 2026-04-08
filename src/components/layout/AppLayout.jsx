@@ -17,10 +17,13 @@ export default function AppLayout() {
     base44.auth.me().then(setUser);
   }, []);
 
-  // Block admin users without active subscription
+  // Block admin users without active subscription (owner is exempt)
   if (user?.role === 'admin' && !subLoading && !hasSubscription) {
     return <SubscriptionRequired />;
   }
+
+  // Owner: redirect from default dashboard to owner panel
+  // (handled via routing — owner sees only /owner route)
 
   return (
     <div className="min-h-screen bg-background">

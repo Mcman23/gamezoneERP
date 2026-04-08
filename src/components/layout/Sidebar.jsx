@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Upload } from 'lucide-react';
+import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Upload, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 
 const navItems = [
+  { path: '/owner', label: 'Owner Panel', icon: Crown, roles: ['owner'] },
   { path: '/', label: 'İdarə Paneli', icon: LayoutDashboard, roles: ['admin', 'user'] },
   { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
@@ -15,7 +16,7 @@ const navItems = [
   { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
   { path: '/import', label: 'Məlumat İdxalı', icon: Upload, roles: ['admin'] },
-  { path: '/admin', label: 'Admin Panel', icon: ShieldAlert, roles: ['admin'] },
+  { path: '/admin', label: 'Sistem Paneli', icon: ShieldAlert, roles: ['admin'] },
 ];
 
 export default function Sidebar({ collapsed, setCollapsed, userRole }) {
