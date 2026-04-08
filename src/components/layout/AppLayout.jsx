@@ -26,10 +26,7 @@ export default function AppLayout() {
     }
   }, [user, location.pathname]);
 
-  // Block admin users without active subscription (only after user is loaded and subscription check is done)
-  if (user && user.role === 'admin' && !subLoading && !hasSubscription) {
-    return <SubscriptionRequired />;
-  }
+  // Subscription check disabled
 
   // Owner: redirect from default dashboard to owner panel
   // (handled via routing — owner sees only /owner route)
