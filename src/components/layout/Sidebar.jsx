@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign } from 'lucide-react';
+import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ const navItems = [
   { path: '/cashier', label: 'Kassir Paneli', icon: Receipt, roles: ['admin', 'user'] },
   { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
+  { path: '/import', label: 'Məlumat İdxalı', icon: Upload, roles: ['admin'] },
   { path: '/admin', label: 'Admin Panel', icon: ShieldAlert, roles: ['admin'] },
 ];
 

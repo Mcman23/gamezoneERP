@@ -15,6 +15,7 @@ import Inventory from './pages/Inventory';
 import Expenses from './pages/Expenses';
 import CashierPanel from './pages/CashierPanel';
 import AdminPanel from './pages/AdminPanel';
+import DataImport from './pages/DataImport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/import" element={<DataImport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
