@@ -9,18 +9,19 @@ export function useTableActions(queryClient, sessionMap) {
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
   };
 
-  const startSession = async (table, durationMinutes) => {
+  const startSession = async (table, durationMinutes, hourlyRateOverride = null) => {
     const now = new Date();
     const isUnlimited = durationMinutes === null;
     const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
-    const sessionCost = isUnlimited ? 0 : roundCost((durationMinutes / 60) * table.hourly_rate);
+    const rate = hourlyRateOverride ?? table.hourly_rate;
+    const sessionCost = isUnlimited ? 0 : roundCost((durationMinutes / 60) * rate);
 
     const session = await base44.entities.Session.create({
       table_id: table.id, table_name: table.name, table_category: table.category,
       start_time: now.toISOString(),
       end_time: isUnlimited ? null : endTime.toISOString(),
       duration_minutes: isUnlimited ? 0 : durationMinutes,
-      hourly_rate: table.hourly_rate,
+      hourly_rate: rate,
       session_cost: sessionCost, orders_cost: 0, total_cost: sessionCost,
       status: 'active', paid: false, is_unlimited: isUnlimited,
     });
