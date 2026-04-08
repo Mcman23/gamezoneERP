@@ -23,6 +23,22 @@ export default function Inventory() {
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [reduceDialog, setReduceDialog] = useState(null);
+  const [reduceAmount, setReduceAmount] = useState(1);
+
+  const handleReduce = async () => {
+    if (!reduceDialog) return;
+    const currentQty = reduceDialog.stock_quantity ?? 0;
+    const newQty = Math.max(0, currentQty - reduceAmount);
+    await base44.entities.Product.update(reduceDialog.id, {
+      stock_quantity: newQty,
+      in_stock: newQty > 0,
+    });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    toast.success(`${reduceDialog.name}: -${Math.min(reduceAmount, currentQty)} stokdan silindi. Yeni stok: ${newQty}`);
+    setReduceDialog(null);
+    setReduceAmount(1);
+  };
 
   const handleDelete = async (product) => {
     await base44.entities.Product.delete(product.id);
@@ -202,6 +218,9 @@ export default function Inventory() {
                         <Button size="sm" variant="outline" onClick={() => { setRestockDialog(product); setRestockAmount(10); }} className="h-7 text-xs gap-1">
                           <Plus className="w-3 h-3" /> Alış
                         </Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setReduceDialog(product); setReduceAmount(1); }} className="h-7 w-7 p-0 text-yellow-500 hover:bg-yellow-500/10" title="Stok azalt">
+                          <span className="text-xs font-bold">−</span>
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(product)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -220,6 +239,43 @@ export default function Inventory() {
           )}
         </div>
       </Card>
+
+      {/* Reduce Stock Dialog */}
+      <Dialog open={!!reduceDialog} onOpenChange={(v) => { if (!v) setReduceDialog(null); }}>
+        <DialogContent className="bg-card border-border max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-sm">−</span>
+              Stok Azalt
+            </DialogTitle>
+          </DialogHeader>
+          {reduceDialog && (
+            <div className="space-y-4 py-2">
+              <div className="bg-secondary rounded-xl p-3">
+                <p className="font-medium text-foreground text-sm">{reduceDialog.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Mövcud stok: <span className="text-foreground font-bold">{reduceDialog.stock_quantity ?? 0}</span></p>
+              </div>
+              <div className="flex gap-2">
+                {[1, 5, 10, 20].map(n => (
+                  <Button key={n} size="sm" variant={reduceAmount === n ? 'default' : 'outline'} onClick={() => setReduceAmount(n)} className="text-xs flex-1">-{n}</Button>
+                ))}
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Azaldılacaq miqdar</Label>
+                <Input type="number" min={1} max={reduceDialog.stock_quantity ?? 0} value={reduceAmount} onChange={e => setReduceAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
+              </div>
+              <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 flex justify-between">
+                <span className="text-sm text-muted-foreground">Yeni stok</span>
+                <span className="text-sm font-bold text-yellow-500">{Math.max(0, (reduceDialog.stock_quantity ?? 0) - reduceAmount)}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReduceDialog(null)}>Ləğv et</Button>
+            <Button onClick={handleReduce} className="bg-yellow-500 hover:bg-yellow-500/90 text-white">Azalt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={(v) => { if (!v) setDeleteConfirm(null); }}>
