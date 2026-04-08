@@ -2,7 +2,7 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { roundCost, calcUnlimitedCost } from '@/lib/tableConfig';
 
-export function useTableActions(queryClient, sessionMap) {
+export function useTableActions(queryClient, sessionMap, clubOwnerId) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
@@ -24,6 +24,7 @@ export function useTableActions(queryClient, sessionMap) {
       hourly_rate: rate,
       session_cost: sessionCost, orders_cost: 0, total_cost: sessionCost,
       status: 'active', paid: false, is_unlimited: isUnlimited,
+      club_owner_id: clubOwnerId,
     });
 
     await base44.entities.GameTable.update(table.id, { status: 'occupied', current_session_id: session.id });
@@ -66,6 +67,7 @@ export function useTableActions(queryClient, sessionMap) {
     await base44.entities.Order.create({
       session_id: session.id, table_id: table.id, table_name: table.name,
       items, total_amount: totalAmount, status: 'delivered',
+      club_owner_id: clubOwnerId,
     });
     const newOrdersCost = roundCost((session.orders_cost || 0) + totalAmount);
     await base44.entities.Session.update(session.id, {

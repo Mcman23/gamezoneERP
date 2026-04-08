@@ -44,7 +44,7 @@ export default function Tables() {
   const sessionMap = {};
   activeSessions.forEach(s => { sessionMap[s.table_id] = s; });
 
-  const actions = useTableActions(queryClient, sessionMap);
+  const actions = useTableActions(queryClient, sessionMap, clubOwnerId);
 
   const grouped = useMemo(() => {
     const groups = {};

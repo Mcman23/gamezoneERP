@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useOutletContext } from 'react-router-dom';
+import { useClub } from '@/hooks/useClub';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -63,29 +65,31 @@ function exportCSV(sessions, orders, period) {
 }
 
 export default function Reports() {
+  const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
   const [period, setPeriod] = useState('today');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ['all-sessions'],
-    queryFn: () => base44.entities.Session.filter({ status: 'completed' }, '-created_date', 1000),
+    queryKey: ['all-sessions', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'completed', club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
   });
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['all-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 1000),
+    queryKey: ['all-orders', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Order.filter({ club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
   });
 
   const { data: tables = [] } = useQuery({
-    queryKey: ['tables'],
-    queryFn: () => base44.entities.GameTable.list(),
+    queryKey: ['tables', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }) : [],
   });
 
   const { data: expenses = [] } = useQuery({
-    queryKey: ['all-expenses'],
-    queryFn: () => base44.entities.Expense.list('-created_date', 1000),
+    queryKey: ['all-expenses', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
   });
 
   const interval = useMemo(() => getInterval(period, customFrom, customTo), [period, customFrom, customTo]);

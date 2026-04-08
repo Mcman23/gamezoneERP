@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useOutletContext } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,21 +9,36 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap, Users, Link2, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 import { DEFAULT_TABLES, CATEGORY_LABELS, getPsRate } from '@/lib/tableConfig';
+import { useClub } from '@/hooks/useClub';
 
 const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, simulator: Tv2 };
 
 export default function Settings() {
+  const { user } = useOutletContext();
+  const { clubOwnerId, isAdmin } = useClub(user);
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', category: 'computer', zone: 'hall', ps_model: 'none', hourly_rate: '', ip_address: '', order_number: 0 });
 
-  const { data: tables = [] } = useQuery({ queryKey: ['tables'], queryFn: () => base44.entities.GameTable.list('order_number') });
+  const { data: tables = [] } = useQuery({
+    queryKey: ['tables', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }, 'order_number') : [],
+  });
 
-  const resetForm = () => { setForm({ name: '', code: '', category: 'computer', zone: 'hall', ps_model: 'none', hourly_rate: '', ip_address: '', order_number: 0 }); setEditing(null); };
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
+
+  const resetForm = () => {
+    setForm({ name: '', code: '', category: 'computer', zone: 'hall', ps_model: 'none', hourly_rate: '', ip_address: '', order_number: 0 });
+    setEditing(null);
+  };
 
   const openEdit = (table) => {
     setForm({ name: table.name, code: table.code || '', category: table.category, zone: table.zone || 'hall', ps_model: table.ps_model || 'none', hourly_rate: table.hourly_rate.toString(), ip_address: table.ip_address || '', order_number: table.order_number || 0 });
@@ -37,10 +53,11 @@ export default function Settings() {
       toast.success('Masa yeniləndi');
     } else {
       data.status = 'available';
+      data.club_owner_id = clubOwnerId;
       await base44.entities.GameTable.create(data);
       toast.success('Masa əlavə edildi');
     }
-    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
     setDialogOpen(false);
     resetForm();
   };
@@ -48,18 +65,29 @@ export default function Settings() {
   const handleDelete = async (table) => {
     if (table.status === 'occupied') { toast.error('Aktiv masa silinə bilməz'); return; }
     await base44.entities.GameTable.delete(table.id);
-    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
     toast.success('Masa silindi');
   };
 
   const autoCreateTables = async () => {
     if (tables.length > 0) { toast.error('Artıq masalar mövcuddur. Əvvəl silin.'); return; }
-    await base44.entities.GameTable.bulkCreate(DEFAULT_TABLES.map(t => ({ ...t, status: 'available' })));
-    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    await base44.entities.GameTable.bulkCreate(DEFAULT_TABLES.map(t => ({ ...t, status: 'available', club_owner_id: clubOwnerId })));
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
     toast.success(`${DEFAULT_TABLES.length} masa avtomatik yaradıldı`);
   };
 
-  // Auto-update hourly rate when PS model/zone changes
+  const linkCashier = async (cashierUser) => {
+    await base44.entities.User.update(cashierUser.id, { club_owner_id: clubOwnerId });
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    toast.success(`${cashierUser.full_name} kluba əlavə edildi`);
+  };
+
+  const unlinkCashier = async (cashierUser) => {
+    await base44.entities.User.update(cashierUser.id, { club_owner_id: '' });
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    toast.success(`${cashierUser.full_name} klubdan çıxarıldı`);
+  };
+
   const handlePsChange = (field, value) => {
     const newForm = { ...form, [field]: value };
     if ((newForm.category === 'playstation' || newForm.category === 'cabinet') && newForm.ps_model !== 'none') {
@@ -68,18 +96,20 @@ export default function Settings() {
     setForm(newForm);
   };
 
-  // normalize: old tables may use `type` field instead of `category`
   const getCategory = (t) => t.category || (t.type === 'pc' ? 'computer' : t.type) || 'computer';
-
   const grouped = {};
   ['computer', 'playstation', 'cabinet', 'simulator'].forEach(cat => { grouped[cat] = tables.filter(t => getCategory(t) === cat); });
+
+  const cashiers = allUsers.filter(u => u.role === 'user' && u.id !== user?.id);
+  const linkedCashiers = cashiers.filter(u => u.club_owner_id === clubOwnerId);
+  const availableCashiers = cashiers.filter(u => !u.club_owner_id);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Tənzimləmələr</h1>
-          <p className="text-sm text-muted-foreground mt-1">Masa və cihaz idarəsi</p>
+          <p className="text-sm text-muted-foreground mt-1">{user?.club_name || 'Klub'} — Masa və cihaz idarəsi</p>
         </div>
         <div className="flex gap-2">
           {tables.length === 0 && (
@@ -93,10 +123,62 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Cashier Management — admin only */}
+      {isAdmin && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground">Kassir İdarəsi</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-4 border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-3">Kluba bağlı kassirler ({linkedCashiers.length})</p>
+              {linkedCashiers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Hələ kassir əlavə edilməyib</p>
+              ) : (
+                <div className="space-y-2">
+                  {linkedCashiers.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => unlinkCashier(c)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                        <Unlink className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <Card className="p-4 border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-3">Əlavə edilməmiş istifadəçilər ({availableCashiers.length})</p>
+              {availableCashiers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Hamı artıq bir kluba bağlıdır</p>
+              ) : (
+                <div className="space-y-2">
+                  {availableCashiers.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => linkCashier(c)} className="h-7 gap-1 text-xs">
+                        <Link2 className="w-3 h-3" /> Əlavə et
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Tables by category */}
       {Object.entries(grouped).map(([cat, items]) => {
         if (items.length === 0) return null;
         const Icon = catIcons[cat] || Monitor;
-
         return (
           <div key={cat}>
             <div className="flex items-center gap-2 mb-3">
