@@ -63,7 +63,7 @@ export default function TableCard({ table, session, onStart, onStop, onRestart, 
         "bg-muted"
       )} />
 
-      <div className="p-4">
+      <div className="p-4 opacity-100 rounded">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
