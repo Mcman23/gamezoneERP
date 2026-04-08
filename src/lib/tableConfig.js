@@ -60,3 +60,14 @@ export function getPsRate(model, zone) {
 export function roundCost(value) {
   return Math.round(value * 100) / 100;
 }
+
+// Unlimited session cost: first 60 min at 50%, rest per minute at full rate
+export function calcUnlimitedCost(elapsedMinutes, hourlyRate) {
+  if (elapsedMinutes <= 0) return 0;
+  const firstHourDiscount = hourlyRate * 0.5; // 50% of hourly for first hour
+  if (elapsedMinutes <= 60) {
+    return roundCost((elapsedMinutes / 60) * firstHourDiscount);
+  }
+  const extraMinutes = elapsedMinutes - 60;
+  return roundCost(firstHourDiscount + (extraMinutes / 60) * hourlyRate);
+}

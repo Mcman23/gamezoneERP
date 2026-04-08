@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertTriangle, Banknote, CreditCard, Infinity } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { roundCost } from '@/lib/tableConfig';
+import { roundCost, calcUnlimitedCost } from '@/lib/tableConfig';
 
 const QUICK_PAY = [1, 5, 10, 20, 50];
 
@@ -27,7 +27,10 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
   if (!table || !session) return null;
 
   const isUnlimited = session.is_unlimited;
-  const actualSessionCost = isUnlimited ? roundCost((elapsed / 60) * session.hourly_rate) : (session.session_cost || 0);
+  const actualSessionCost = isUnlimited ? calcUnlimitedCost(elapsed, session.hourly_rate) : (session.session_cost || 0);
+  // Campaign info for display
+  const isInFirstHour = isUnlimited && elapsed <= 60;
+  const campaignSaving = isUnlimited ? roundCost(((Math.min(elapsed, 60) / 60) * session.hourly_rate) - (isInFirstHour ? actualSessionCost : session.hourly_rate * 0.5)) : 0;
   const totalCost = roundCost(actualSessionCost + (session.orders_cost || 0));
   const paidNum = parseFloat(amountPaid) || 0;
   const change = paidNum > totalCost ? roundCost(paidNum - totalCost) : 0;
@@ -48,9 +51,20 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
         </DialogHeader>
         <div className="py-2 space-y-4">
           {isUnlimited && (
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
-              <Infinity className="w-4 h-4 text-accent" />
-              <span className="text-xs text-accent font-medium">Limitsiz — {elapsed} dəq keçib</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2">
+                <Infinity className="w-4 h-4 text-accent" />
+                <span className="text-xs text-accent font-medium">Limitsiz — {elapsed} dəq keçib</span>
+              </div>
+              {isInFirstHour ? (
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                  <span className="text-xs text-green-500 font-semibold">🎉 Kampaniya: İlk 1 saat 50% endirim — {elapsed} dəq / {session.hourly_rate * 0.5} ₼ əvəzinə {actualSessionCost.toFixed(2)} ₼</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                  <span className="text-xs text-yellow-500 font-medium">İlk saat: {session.hourly_rate * 0.5} ₼ + {elapsed - 60} dəq ({((elapsed - 60) / 60 * session.hourly_rate).toFixed(2)} ₼)</span>
+                </div>
+              )}
             </div>
           )}
 

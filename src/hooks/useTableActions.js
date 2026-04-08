@@ -1,6 +1,6 @@
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { roundCost } from '@/lib/tableConfig';
+import { roundCost, calcUnlimitedCost } from '@/lib/tableConfig';
 
 export function useTableActions(queryClient, sessionMap) {
   const invalidate = () => {
@@ -33,7 +33,7 @@ export function useTableActions(queryClient, sessionMap) {
 
   const stopSession = async (table, session, paymentMethod = 'cash', elapsedMinutes = null, amountPaid = null) => {
     const isUnlimited = session.is_unlimited;
-    const actualCost = isUnlimited ? roundCost((elapsedMinutes / 60) * session.hourly_rate) : (session.session_cost || 0);
+    const actualCost = isUnlimited ? calcUnlimitedCost(elapsedMinutes, session.hourly_rate) : (session.session_cost || 0);
     const totalCost = roundCost(actualCost + (session.orders_cost || 0));
 
     await base44.entities.Session.update(session.id, {
