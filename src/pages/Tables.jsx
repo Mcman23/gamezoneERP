@@ -15,12 +15,14 @@ import MoveTableDialog from '@/components/tables/MoveTableDialog';
 import MergeTableDialog from '@/components/tables/MergeTableDialog';
 import RemoteControlDialog from '@/components/tables/RemoteControlDialog';
 import { useTableActions } from '@/hooks/useTableActions';
+import { useClub } from '@/hooks/useClub';
 
 const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, simulator: Tv2 };
 
 export default function Tables() {
   const { user } = useOutletContext();
   const queryClient = useQueryClient();
+  const { clubOwnerId } = useClub(user);
 
   const [startDialog, setStartDialog] = useState({ open: false, table: null });
   const [stopDialog, setStopDialog] = useState({ open: false, table: null, session: null });
@@ -31,13 +33,13 @@ export default function Tables() {
   const [remoteDialog, setRemoteDialog] = useState({ open: false, table: null });
 
   const { data: tables = [], isLoading } = useQuery({
-    queryKey: ['tables'],
-    queryFn: () => base44.entities.GameTable.list('order_number'),
+    queryKey: ['tables', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }, 'order_number') : [],
   });
 
   const { data: activeSessions = [] } = useQuery({
-    queryKey: ['active-sessions'],
-    queryFn: () => base44.entities.Session.filter({ status: 'active' }),
+    queryKey: ['active-sessions', clubOwnerId],
+    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [],
     refetchInterval: 15000,
   });
 
