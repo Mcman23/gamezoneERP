@@ -41,7 +41,7 @@ export default function Tables() {
     queryKey: ['tables', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: 30000
   });
 
   const { data: activeSessions = [] } = useQuery({
@@ -49,22 +49,22 @@ export default function Tables() {
     queryFn: async () => {
       if (!user) return [];
       const all = await fetchClubEntities(base44.entities.Session, user, {}, '-created_date', 100);
-      return all.filter(x => x.status === 'active' || x.status === 'paused');
+      return all.filter((x) => x.status === 'active' || x.status === 'paused');
     },
     enabled: !!user,
-    refetchInterval: 15000,
+    refetchInterval: 15000
   });
 
   const sessionMap = {};
-  activeSessions.forEach(s => { sessionMap[s.table_id] = s; });
+  activeSessions.forEach((s) => {sessionMap[s.table_id] = s;});
 
   const actions = useTableActions(queryClient, sessionMap, clubOwnerId);
 
   const grouped = useMemo(() => {
     const groups = {};
     const order = ['computer', 'playstation', 'cabinet', 'simulator'];
-    order.forEach(cat => { groups[cat] = []; });
-    tables.forEach(t => {
+    order.forEach((cat) => {groups[cat] = [];});
+    tables.forEach((t) => {
       const cat = t.category || 'computer';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(t);
@@ -72,7 +72,7 @@ export default function Tables() {
     return Object.entries(groups).filter(([, items]) => items.length > 0);
   }, [tables]);
 
-  const occupied = tables.filter(t => t.status === 'occupied').length;
+  const occupied = tables.filter((t) => t.status === 'occupied').length;
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
@@ -87,8 +87,8 @@ export default function Tables() {
           <p className="text-lg font-medium text-foreground mb-1">Hələ heç bir masa əlavə edilməyib</p>
           <p className="text-sm text-muted-foreground mb-4">Masaları idarə etmək üçün Tənzimləmələr bölməsinə keçin</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -105,38 +105,38 @@ export default function Tables() {
         return (
           <div key={category}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{CATEGORY_LABELS[category] || category}</span>
+              <span className="text-muted-foreground text-base font-extrabold uppercase tracking-wider">{CATEGORY_LABELS[category] || category}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {items.map(table => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  session={sessionMap[table.id]}
-                  onStart={(t) => setStartDialog({ open: true, table: t })}
-                  onStop={(t, s) => setStopDialog({ open: true, table: t, session: s })}
-                  onExtend={(t, s) => setExtendDialog({ open: true, table: t, session: s })}
-                  onOrder={(t, s) => setOrderDialog({ open: true, table: t, session: s })}
-                  onPause={(t, s) => actions.pauseSession(t, s)}
-                  onResume={(t, s) => actions.resumeSession(t, s)}
-                  onMove={(t) => setMoveDialog({ open: true, table: t })}
-                  onMerge={(t) => setMergeDialog({ open: true, table: t })}
-                  onRemote={(t) => setRemoteDialog({ open: true, table: t })}
-                  isAdmin={user?.role === 'admin'}
-                />
-              ))}
+              {items.map((table) =>
+              <TableCard
+                key={table.id}
+                table={table}
+                session={sessionMap[table.id]}
+                onStart={(t) => setStartDialog({ open: true, table: t })}
+                onStop={(t, s) => setStopDialog({ open: true, table: t, session: s })}
+                onExtend={(t, s) => setExtendDialog({ open: true, table: t, session: s })}
+                onOrder={(t, s) => setOrderDialog({ open: true, table: t, session: s })}
+                onPause={(t, s) => actions.pauseSession(t, s)}
+                onResume={(t, s) => actions.resumeSession(t, s)}
+                onMove={(t) => setMoveDialog({ open: true, table: t })}
+                onMerge={(t) => setMergeDialog({ open: true, table: t })}
+                onRemote={(t) => setRemoteDialog({ open: true, table: t })}
+                isAdmin={user?.role === 'admin'} />
+
+              )}
             </div>
-          </div>
-        );
+          </div>);
+
       })}
 
-      <StartSessionDialog open={startDialog.open} onOpenChange={(v) => setStartDialog(s => ({ ...s, open: v }))} table={startDialog.table} onConfirm={actions.startSession} />
-      <StopSessionDialog open={stopDialog.open} onOpenChange={(v) => setStopDialog(s => ({ ...s, open: v }))} table={stopDialog.table} session={stopDialog.session} onConfirm={actions.stopSession} />
-      <ExtendSessionDialog open={extendDialog.open} onOpenChange={(v) => setExtendDialog(s => ({ ...s, open: v }))} table={extendDialog.table} session={extendDialog.session} onConfirm={actions.extendSession} />
-      <OrderDialog open={orderDialog.open} onOpenChange={(v) => setOrderDialog(s => ({ ...s, open: v }))} table={orderDialog.table} session={orderDialog.session} onConfirm={actions.addOrder} />
-      <MoveTableDialog open={moveDialog.open} onOpenChange={(v) => setMoveDialog(s => ({ ...s, open: v }))} sourceTable={moveDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target) => actions.moveSession(moveDialog.table, target)} />
-      <MergeTableDialog open={mergeDialog.open} onOpenChange={(v) => setMergeDialog(s => ({ ...s, open: v }))} sourceTable={mergeDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target, targetSession) => actions.mergeSession(mergeDialog.table, target, targetSession)} />
-      <RemoteControlDialog open={remoteDialog.open} onOpenChange={(v) => setRemoteDialog(s => ({ ...s, open: v }))} table={remoteDialog.table} isAdmin={user?.role === 'admin'} />
-    </div>
-  );
+      <StartSessionDialog open={startDialog.open} onOpenChange={(v) => setStartDialog((s) => ({ ...s, open: v }))} table={startDialog.table} onConfirm={actions.startSession} />
+      <StopSessionDialog open={stopDialog.open} onOpenChange={(v) => setStopDialog((s) => ({ ...s, open: v }))} table={stopDialog.table} session={stopDialog.session} onConfirm={actions.stopSession} />
+      <ExtendSessionDialog open={extendDialog.open} onOpenChange={(v) => setExtendDialog((s) => ({ ...s, open: v }))} table={extendDialog.table} session={extendDialog.session} onConfirm={actions.extendSession} />
+      <OrderDialog open={orderDialog.open} onOpenChange={(v) => setOrderDialog((s) => ({ ...s, open: v }))} table={orderDialog.table} session={orderDialog.session} onConfirm={actions.addOrder} />
+      <MoveTableDialog open={moveDialog.open} onOpenChange={(v) => setMoveDialog((s) => ({ ...s, open: v }))} sourceTable={moveDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target) => actions.moveSession(moveDialog.table, target)} />
+      <MergeTableDialog open={mergeDialog.open} onOpenChange={(v) => setMergeDialog((s) => ({ ...s, open: v }))} sourceTable={mergeDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target, targetSession) => actions.mergeSession(mergeDialog.table, target, targetSession)} />
+      <RemoteControlDialog open={remoteDialog.open} onOpenChange={(v) => setRemoteDialog((s) => ({ ...s, open: v }))} table={remoteDialog.table} isAdmin={user?.role === 'admin'} />
+    </div>);
+
 }
