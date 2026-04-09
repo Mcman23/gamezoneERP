@@ -131,7 +131,7 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
         <div className="space-y-1.5">
           {!isOccupied && !isLocked &&
           <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
-              <Play className="w-3.5 h-3.5 mr-1.5" /> Aç
+              <Play className="text-[hsl(var(--chart-5))] mr-1.5 lucide lucide-play w-3.5 h-3.5" /> Aç
             </Button>
           }
           {isOccupied &&
