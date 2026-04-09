@@ -218,7 +218,8 @@ export default function Reports() {
         orderRevenue={orderRevenue}
         sessionCount={sessionCount}
         avgDuration={avgDuration}
-        tableUsageRate={tableUsageRate}
+        totalExpenses={totalExpenses}
+        netProfit={netProfit}
       />
 
       {/* Revenue + Peak Hours */}

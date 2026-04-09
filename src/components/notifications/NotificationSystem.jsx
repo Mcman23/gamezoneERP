@@ -21,13 +21,16 @@ function playBeep(type) {
   } catch {}
 }
 
-export default function NotificationSystem() {
+export default function NotificationSystem({ clubOwnerId }) {
   const [notifications, setNotifications] = useState([]);
   const notifiedRef = useRef(new Set());
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ['active-sessions-notify'],
-    queryFn: () => base44.entities.Session.filter({ status: 'active' }),
+    queryKey: ['active-sessions-notify', clubOwnerId],
+    queryFn: () => clubOwnerId
+      ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId })
+      : [],
+    enabled: !!clubOwnerId,
     refetchInterval: 15000,
   });
 

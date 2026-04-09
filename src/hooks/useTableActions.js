@@ -2,14 +2,32 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { roundCost, calcUnlimitedCost } from '@/lib/tableConfig';
 
+function getBillingElapsedMinutes(session) {
+  // For unlimited sessions: raw elapsed minus all paused time
+  const totalMs = new Date() - new Date(session.start_time);
+  const pausedMs = (session.total_paused_minutes || 0) * 60000;
+  // If currently paused, also subtract current pause duration
+  const currentPauseMs = (session.status === 'paused' && session.pause_start)
+    ? new Date() - new Date(session.pause_start)
+    : 0;
+  return Math.max(0, Math.floor((totalMs - pausedMs - currentPauseMs) / 60000));
+}
+
 export function useTableActions(queryClient, sessionMap, clubOwnerId) {
   const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions-notify', clubOwnerId] });
+    // Also invalidate without key suffix for safety
     queryClient.invalidateQueries({ queryKey: ['tables'] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
-    queryClient.invalidateQueries({ queryKey: ['active-sessions-notify'] });
   };
 
   const startSession = async (table, durationMinutes, hourlyRateOverride = null) => {
+    if (['locked', 'offline', 'maintenance', 'occupied'].includes(table.status)) {
+      toast.error('Bu masa sessiya üçün uygun deyil');
+      return;
+    }
     const now = new Date();
     const isUnlimited = durationMinutes === null;
     const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
@@ -32,16 +50,47 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəq'}`);
   };
 
-  const stopSession = async (table, session, paymentMethod = 'cash', elapsedMinutes = null, amountPaid = null) => {
+  const pauseSession = async (table, session) => {
+    if (session.status !== 'active') return;
+    await base44.entities.Session.update(session.id, {
+      status: 'paused',
+      pause_start: new Date().toISOString(),
+    });
+    invalidate();
+    toast.success(`${table.name} fasilə verildi`);
+  };
+
+  const resumeSession = async (table, session) => {
+    if (session.status !== 'paused' || !session.pause_start) return;
+    const pausedMs = new Date() - new Date(session.pause_start);
+    const pausedMinutes = Math.floor(pausedMs / 60000);
+    const newTotalPaused = (session.total_paused_minutes || 0) + pausedMinutes;
+    // Push end_time forward by the pause duration (for non-unlimited sessions)
+    const newEndTime = session.end_time
+      ? new Date(new Date(session.end_time).getTime() + pausedMs).toISOString()
+      : null;
+    await base44.entities.Session.update(session.id, {
+      status: 'active',
+      pause_start: null,
+      total_paused_minutes: newTotalPaused,
+      ...(newEndTime ? { end_time: newEndTime } : {}),
+    });
+    invalidate();
+    toast.success(`${table.name} davam etdirildi`);
+  };
+
+  const stopSession = async (table, session, paymentMethod = 'cash', billingMinutes = null, amountPaid = null) => {
     const isUnlimited = session.is_unlimited;
-    const actualCost = isUnlimited ? calcUnlimitedCost(elapsedMinutes, session.hourly_rate) : (session.session_cost || 0);
+    const actualBilling = billingMinutes ?? (isUnlimited ? getBillingElapsedMinutes(session) : null);
+    const actualCost = isUnlimited ? calcUnlimitedCost(actualBilling, session.hourly_rate) : (session.session_cost || 0);
     const totalCost = roundCost(actualCost + (session.orders_cost || 0));
 
     await base44.entities.Session.update(session.id, {
       status: 'completed',
-      duration_minutes: isUnlimited ? elapsedMinutes : session.duration_minutes,
+      duration_minutes: isUnlimited ? (actualBilling || 0) : session.duration_minutes,
       session_cost: actualCost, total_cost: totalCost,
       paid: true, payment_method: paymentMethod,
+      pause_start: null,
     });
     await base44.entities.GameTable.update(table.id, { status: 'available', current_session_id: '' });
     invalidate();
@@ -110,5 +159,5 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     toast.success(`${sourceTable.name} → ${targetTable.name} birləşdirildi`);
   };
 
-  return { startSession, stopSession, extendSession, addOrder, moveSession, mergeSession };
+  return { startSession, stopSession, pauseSession, resumeSession, extendSession, addOrder, moveSession, mergeSession };
 }

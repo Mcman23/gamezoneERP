@@ -32,14 +32,22 @@ export default function Tables() {
   const [mergeDialog, setMergeDialog] = useState({ open: false, table: null });
   const [remoteDialog, setRemoteDialog] = useState({ open: false, table: null });
 
+  const refetchAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
+  };
+
   const { data: tables = [], isLoading } = useQuery({
     queryKey: ['tables', clubOwnerId],
     queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }, 'order_number') : [],
+    enabled: !!clubOwnerId,
+    refetchInterval: 30000,
   });
 
   const { data: activeSessions = [] } = useQuery({
     queryKey: ['active-sessions', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [],
+    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ club_owner_id: clubOwnerId }, '-created_date', 100).then(s => s.filter(x => x.status === 'active' || x.status === 'paused')) : [],
+    enabled: !!clubOwnerId,
     refetchInterval: 15000,
   });
 
@@ -92,6 +100,8 @@ export default function Tables() {
                   onStop={(t, s) => setStopDialog({ open: true, table: t, session: s })}
                   onExtend={(t, s) => setExtendDialog({ open: true, table: t, session: s })}
                   onOrder={(t, s) => setOrderDialog({ open: true, table: t, session: s })}
+                  onPause={(t, s) => actions.pauseSession(t, s)}
+                  onResume={(t, s) => actions.resumeSession(t, s)}
                   onMove={(t) => setMoveDialog({ open: true, table: t })}
                   onMerge={(t) => setMergeDialog({ open: true, table: t })}
                   onRemote={(t) => setRemoteDialog({ open: true, table: t })}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { useClub } from '@/hooks/useClub';
 import Sidebar from './Sidebar';
 import { useSubscription } from '@/hooks/useSubscription';
 import SubscriptionRequired from '@/pages/SubscriptionRequired';
@@ -12,6 +13,7 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const { hasSubscription, isLoading: subLoading } = useSubscription(user);
+  const { clubOwnerId } = useClub(user);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,7 +55,7 @@ export default function AppLayout() {
         </div>
       </main>
 
-      <NotificationSystem />
+      <NotificationSystem clubOwnerId={clubOwnerId} />
     </div>
   );
 }

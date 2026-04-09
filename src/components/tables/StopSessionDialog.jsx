@@ -15,10 +15,19 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
   const [amountPaid, setAmountPaid] = useState('');
 
   useEffect(() => {
-    if (!open || !session?.is_unlimited) return;
-    const update = () => setElapsed(Math.floor((new Date() - new Date(session.start_time)) / 60000));
-    update();
-    const iv = setInterval(update, 10000);
+    if (!open || !session) return;
+    const calcBilling = () => {
+      const totalMs = new Date() - new Date(session.start_time);
+      const pausedMs = (session.total_paused_minutes || 0) * 60000;
+      // If session is currently paused, also subtract current pause duration
+      const currentPauseMs = (session.status === 'paused' && session.pause_start)
+        ? new Date() - new Date(session.pause_start)
+        : 0;
+      return Math.max(0, Math.floor((totalMs - pausedMs - currentPauseMs) / 60000));
+    };
+    setElapsed(calcBilling());
+    if (!session.is_unlimited) return;
+    const iv = setInterval(() => setElapsed(calcBilling()), 10000);
     return () => clearInterval(iv);
   }, [open, session]);
 
@@ -27,9 +36,14 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
   if (!table || !session) return null;
 
   const isUnlimited = session.is_unlimited;
-  const actualSessionCost = isUnlimited ? calcUnlimitedCost(elapsed, session.hourly_rate) : (session.session_cost || 0);
+  // For non-unlimited paused sessions, use stored session_cost
+  const actualSessionCost = isUnlimited
+    ? calcUnlimitedCost(elapsed, session.hourly_rate)
+    : (session.session_cost || 0);
+  // Only count delivered (non-cancelled) orders
+  const effectiveOrdersCost = session.orders_cost || 0;
   const isInMin30 = isUnlimited && elapsed < 30;
-  const totalCost = roundCost(actualSessionCost + (session.orders_cost || 0));
+  const totalCost = roundCost(actualSessionCost + effectiveOrdersCost);
   const paidNum = parseFloat(amountPaid) || 0;
   const change = paidNum > totalCost ? roundCost(paidNum - totalCost) : 0;
 
@@ -69,7 +83,7 @@ export default function StopSessionDialog({ open, onOpenChange, table, session, 
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Sifarişlər</span>
-              <span className="text-foreground">{(session.orders_cost || 0).toFixed(2)} ₼</span>
+              <span className="text-foreground">{effectiveOrdersCost.toFixed(2)} ₼</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
               <span className="font-semibold text-foreground">Ümumi</span>

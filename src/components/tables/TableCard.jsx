@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, Gamepad2, Play, Square, Clock, Plus, Coffee, ArrowRightLeft, Link2, ChevronDown, ChevronUp, Zap, Lock, Tv2 } from 'lucide-react';
+import { Monitor, Gamepad2, Play, Square, Clock, Plus, Coffee, ArrowRightLeft, Link2, ChevronDown, ChevronUp, Zap, Lock, Tv2, Pause, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function formatTime(totalSeconds) {
@@ -24,17 +24,23 @@ const statusConfig = {
   offline: { label: 'OFFLINE', variant: 'outline' },
 };
 
-export default function TableCard({ table, session, onStart, onStop, onExtend, onOrder, onMove, onMerge, onRemote, isAdmin }) {
+export default function TableCard({ table, session, onStart, onStop, onPause, onResume, onExtend, onOrder, onMove, onMerge, onRemote, isAdmin }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [remaining, setRemaining] = useState(null);
   const [elapsedSecs, setElapsedSecs] = useState(0);
-  const isOccupied = table.status === 'occupied' && session;
-  const isLocked = table.status === 'locked' || table.status === 'offline';
+  const isPaused = session?.status === 'paused';
+  const isOccupied = (table.status === 'occupied') && session;
+  const isLocked = table.status === 'locked' || table.status === 'offline' || table.status === 'maintenance';
 
   useEffect(() => {
     if (!isOccupied) { setRemaining(null); return; }
+    if (isPaused) return; // timer does NOT tick during pause
     if (session?.is_unlimited) {
-      const update = () => setElapsedSecs(Math.floor((new Date() - new Date(session.start_time)) / 1000));
+      const pausedMs = (session.total_paused_minutes || 0) * 60000;
+      const update = () => {
+        const totalMs = new Date() - new Date(session.start_time);
+        setElapsedSecs(Math.max(0, Math.floor((totalMs - pausedMs) / 1000)));
+      };
       update();
       const iv = setInterval(update, 1000);
       return () => clearInterval(iv);
@@ -44,11 +50,11 @@ export default function TableCard({ table, session, onStart, onStop, onExtend, o
     update();
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
-  }, [isOccupied, session?.end_time, session?.is_unlimited, session?.start_time]);
+  }, [isOccupied, isPaused, session?.end_time, session?.is_unlimited, session?.start_time, session?.total_paused_minutes]);
 
   const isUnlimited = session?.is_unlimited;
-  const isWarning = !isUnlimited && remaining !== null && remaining <= 600 && remaining > 300;
-  const isDanger = !isUnlimited && remaining !== null && remaining <= 300;
+  const isWarning = !isUnlimited && !isPaused && remaining !== null && remaining <= 600 && remaining > 300;
+  const isDanger = !isUnlimited && !isPaused && remaining !== null && remaining <= 300;
   const Icon = catIcons[table.category] || Monitor;
   const totalCost = session ? ((session.session_cost || 0) + (session.orders_cost || 0)).toFixed(2) : '0.00';
 
@@ -100,6 +106,12 @@ export default function TableCard({ table, session, onStart, onStop, onExtend, o
         )}
 
         {/* Cost */}
+        {isPaused && (
+          <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-1.5 mb-2">
+            <Pause className="w-3.5 h-3.5 text-yellow-500" />
+            <span className="text-xs text-yellow-500 font-medium">Fasilə</span>
+          </div>
+        )}
         {isOccupied && (
           <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 mb-3">
             <span className="text-xs text-muted-foreground">Ümumi</span>
@@ -128,13 +140,20 @@ export default function TableCard({ table, session, onStart, onStop, onExtend, o
                 <Button size="sm" variant="destructive" onClick={() => onStop(table, session)} className="text-xs">
                   <Square className="w-3 h-3 mr-1" /> Bağla
                 </Button>
-                <Button size="sm" variant={menuOpen ? 'secondary' : 'outline'} onClick={() => setMenuOpen(v => !v)} className="text-xs font-medium">
-                  <Zap className="w-3 h-3 mr-1" /> Ətraflı
-                  {menuOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                </Button>
+                {isPaused ? (
+                  <Button size="sm" variant="outline" onClick={() => onResume(table, session)} className="text-xs text-green-500 border-green-500/30">
+                    <PlayCircle className="w-3 h-3 mr-1" /> Davam
+                  </Button>
+                ) : (
+                  <Button size="sm" variant={menuOpen ? 'secondary' : 'outline'} onClick={() => setMenuOpen(v => !v)} className="text-xs font-medium">
+                    <Zap className="w-3 h-3 mr-1" /> Ətraflı
+                    {menuOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                  </Button>
+                )}
               </div>
-              {menuOpen && (
+              {menuOpen && !isPaused && (
                 <div className="rounded-xl border border-border bg-secondary/60 p-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <MenuBtn icon={Pause} label="Fasilə" color="yellow-500" onClick={() => { onPause(table, session); setMenuOpen(false); }} />
                   <MenuBtn icon={Plus} label="Vaxt uzat" color="primary" onClick={() => { onExtend(table, session); setMenuOpen(false); }} />
                   <MenuBtn icon={Coffee} label="Sifariş" color="accent" onClick={() => { onOrder(table, session); setMenuOpen(false); }} />
                   <MenuBtn icon={ArrowRightLeft} label="Köçür" color="blue-400" onClick={() => { onMove(table); setMenuOpen(false); }} />

@@ -1,16 +1,23 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { DollarSign, Monitor, ShoppingCart, TrendingUp, Clock, Zap } from 'lucide-react';
+import { DollarSign, Monitor, ShoppingCart, TrendingUp, Clock, TrendingDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function ReportStats({ totalRevenue, sessionRevenue, orderRevenue, sessionCount, avgDuration, tableUsageRate }) {
+export default function ReportStats({ totalRevenue, sessionRevenue, orderRevenue, sessionCount, avgDuration, totalExpenses, netProfit }) {
   const stats = [
-    { label: 'Ümumi Gəlir', value: `${totalRevenue.toFixed(2)} ₼`, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
-    { label: 'Sessiya Gəliri', value: `${sessionRevenue.toFixed(2)} ₼`, icon: Monitor, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
-    { label: 'Sifariş Gəliri', value: `${orderRevenue.toFixed(2)} ₼`, icon: ShoppingCart, color: 'text-accent', bg: 'bg-accent/10', border: 'border-accent/20' },
-    { label: 'Sessiya Sayı', value: sessionCount, icon: TrendingUp, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-    { label: 'Ort. Müddət', value: `${avgDuration} dəq`, icon: Clock, color: 'text-pink-400', bg: 'bg-pink-400/10', border: 'border-pink-400/20' },
-    { label: 'Masa İstifadəsi', value: `${tableUsageRate}%`, icon: Zap, color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20' },
+    { label: 'Ümumi Gəlir', value: `${(totalRevenue || 0).toFixed(2)} ₼`, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+    { label: 'Sessiya Gəliri', value: `${(sessionRevenue || 0).toFixed(2)} ₼`, icon: Monitor, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
+    { label: 'Sifariş Gəliri', value: `${(orderRevenue || 0).toFixed(2)} ₼`, icon: ShoppingCart, color: 'text-accent', bg: 'bg-accent/10', border: 'border-accent/20' },
+    { label: 'Sessiya Sayı', value: sessionCount || 0, icon: TrendingUp, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    { label: 'Xərclər', value: `${(totalExpenses || 0).toFixed(2)} ₼`, icon: TrendingDown, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' },
+    {
+      label: 'Xalis Mənfəət',
+      value: `${(netProfit || 0).toFixed(2)} ₼`,
+      icon: DollarSign,
+      color: (netProfit || 0) >= 0 ? 'text-green-500' : 'text-destructive',
+      bg: (netProfit || 0) >= 0 ? 'bg-green-500/10' : 'bg-destructive/10',
+      border: (netProfit || 0) >= 0 ? 'border-green-500/20' : 'border-destructive/20',
+    },
   ];
 
   return (

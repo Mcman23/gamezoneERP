@@ -14,13 +14,22 @@ export default function OrderDialog({ open, onOpenChange, table, session, onConf
   const [cart, setCart] = useState({});
   const [activeCategory, setActiveCategory] = useState('all');
 
-  const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: () => base44.entities.Product.list() });
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => base44.entities.Product.list(),
+  });
 
+  // Only show products that are in stock (both flag and quantity check)
   const inStockProducts = products.filter(p => p.in_stock !== false && (p.stock_quantity == null || p.stock_quantity > 0));
   const filteredProducts = activeCategory === 'all' ? inStockProducts : inStockProducts.filter(p => p.category === activeCategory);
   const categories = ['all', ...new Set(inStockProducts.map(p => p.category))];
 
-  const addToCart = (product) => setCart(prev => ({ ...prev, [product.id]: { product, quantity: (prev[product.id]?.quantity || 0) + 1 } }));
+  const addToCart = (product) => {
+    const currentQty = cart[product.id]?.quantity || 0;
+    // Don't allow adding more than available stock
+    if (product.stock_quantity != null && currentQty >= product.stock_quantity) return;
+    setCart(prev => ({ ...prev, [product.id]: { product, quantity: currentQty + 1 } }));
+  };
   const removeFromCart = (productId) => setCart(prev => {
     const next = { ...prev };
     if (next[productId]?.quantity > 1) next[productId] = { ...next[productId], quantity: next[productId].quantity - 1 };
