@@ -72,7 +72,7 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", isOccupied ? "bg-primary/10" : "bg-muted")}>
-              <Icon className={cn("w-5 h-5", isOccupied ? "text-primary" : "text-muted-foreground")} />
+              <Icon className="text-[hsl(var(--ring))] lucide lucide-monitor w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-foreground text-sm">{table.name}</h3>
