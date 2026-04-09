@@ -105,7 +105,7 @@ export default function Tables() {
         return (
           <div key={category}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-muted-foreground text-base font-extrabold uppercase tracking-wider">{CATEGORY_LABELS[category] || category}</span>
+              <span className="text-[hsl(var(--destructive-foreground))] text-base font-extrabold uppercase tracking-wider">{CATEGORY_LABELS[category] || category}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {items.map((table) =>
