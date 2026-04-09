@@ -15,7 +15,7 @@ export const CATEGORIES = {
 
 export const CATEGORY_LABELS = {
   computer: 'PC',
-  playstation: 'PS',
+  playstation: 'PlayStation',
   cabinet: 'KABINET',
   simulator: 'SIMULATOR',
 };
