@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
-import { useClub } from '@/hooks/useClub';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -74,22 +74,26 @@ export default function Reports() {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['all-sessions', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'completed', club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'completed' }, '-created_date', 1000) : [],
+    enabled: !!user,
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['all-orders', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Order.filter({ club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Order, user, {}, '-created_date', 1000) : [],
+    enabled: !!user,
   });
 
   const { data: tables = [] } = useQuery({
     queryKey: ['tables', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user) : [],
+    enabled: !!user,
   });
 
   const { data: expenses = [] } = useQuery({
     queryKey: ['all-expenses', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }, '-created_date', 1000) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Expense, user, {}, '-created_date', 1000) : [],
+    enabled: !!user,
   });
 
   const interval = useMemo(() => getInterval(period, customFrom, customTo), [period, customFrom, customTo]);

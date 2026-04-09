@@ -27,9 +27,18 @@ export default function NotificationSystem({ clubOwnerId }) {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['active-sessions-notify', clubOwnerId],
-    queryFn: () => clubOwnerId
-      ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId })
-      : [],
+    queryFn: async () => {
+      if (!clubOwnerId) return [];
+      // Backward compatible: get by club_owner_id OR without it
+      const [byOwner, byCreator] = await Promise.all([
+        base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }),
+        base44.entities.Session.filter({ status: 'active' }, '-created_date', 100),
+      ]);
+      const map = {};
+      byOwner.forEach(r => { map[r.id] = r; });
+      byCreator.forEach(r => { if (!r.club_owner_id) map[r.id] = r; });
+      return Object.values(map);
+    },
     enabled: !!clubOwnerId,
     refetchInterval: 15000,
   });

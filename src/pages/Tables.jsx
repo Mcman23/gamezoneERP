@@ -15,7 +15,7 @@ import MoveTableDialog from '@/components/tables/MoveTableDialog';
 import MergeTableDialog from '@/components/tables/MergeTableDialog';
 import RemoteControlDialog from '@/components/tables/RemoteControlDialog';
 import { useTableActions } from '@/hooks/useTableActions';
-import { useClub } from '@/hooks/useClub';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 
 const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, simulator: Tv2 };
 
@@ -39,15 +39,19 @@ export default function Tables() {
 
   const { data: tables = [], isLoading } = useQuery({
     queryKey: ['tables', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }, 'order_number') : [],
-    enabled: !!clubOwnerId,
+    queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
+    enabled: !!user,
     refetchInterval: 30000,
   });
 
   const { data: activeSessions = [] } = useQuery({
     queryKey: ['active-sessions', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ club_owner_id: clubOwnerId }, '-created_date', 100).then(s => s.filter(x => x.status === 'active' || x.status === 'paused')) : [],
-    enabled: !!clubOwnerId,
+    queryFn: async () => {
+      if (!user) return [];
+      const all = await fetchClubEntities(base44.entities.Session, user, {}, '-created_date', 100);
+      return all.filter(x => x.status === 'active' || x.status === 'paused');
+    },
+    enabled: !!user,
     refetchInterval: 15000,
   });
 
@@ -72,6 +76,19 @@ export default function Tables() {
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  if (!isLoading && tables.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div><h1 className="text-2xl font-bold">Masalar</h1></div>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <Monitor className="w-14 h-14 text-muted-foreground/20 mb-4" />
+          <p className="text-lg font-medium text-foreground mb-1">Hələ heç bir masa əlavə edilməyib</p>
+          <p className="text-sm text-muted-foreground mb-4">Masaları idarə etmək üçün Tənzimləmələr bölməsinə keçin</p>
+        </div>
+      </div>
+    );
   }
 
   return (

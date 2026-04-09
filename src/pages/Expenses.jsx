@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
-import { useClub } from '@/hooks/useClub';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,8 @@ export default function Expenses() {
 
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }, '-created_date', 500) : [],
-    enabled: !!clubOwnerId,
+    queryFn: () => user ? fetchClubEntities(base44.entities.Expense, user, {}, '-created_date', 500) : [],
+    enabled: !!user,
   });
 
   const resetForm = () => { setForm(defaultForm); setEditing(null); };

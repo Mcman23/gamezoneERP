@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/owner', label: 'Owner', icon: Crown, roles: ['owner'] },
-  { path: '/', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'user'] },
+  { path: '/', label: 'Panel', icon: LayoutDashboard, roles: ['admin'] },
   { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/cashier', label: 'Kassir', icon: Receipt, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsul', icon: Coffee, roles: ['admin'] },

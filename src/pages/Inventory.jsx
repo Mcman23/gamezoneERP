@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useOutletContext } from 'react-router-dom';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +13,8 @@ import { Warehouse, Package, AlertTriangle, PackageX, TrendingUp, Search, Plus, 
 import { toast } from 'sonner';
 
 export default function Inventory() {
+  const { user } = useOutletContext();
+  const { clubOwnerId } = useClub(user);
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [restockDialog, setRestockDialog] = useState(null);
@@ -18,8 +22,9 @@ export default function Inventory() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list(),
+    queryKey: ['products', clubOwnerId],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Product, user) : [],
+    enabled: !!user,
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -34,7 +39,7 @@ export default function Inventory() {
       stock_quantity: newQty,
       in_stock: newQty > 0,
     });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${reduceDialog.name}: -${Math.min(reduceAmount, currentQty)} stokdan silindi. Yeni stok: ${newQty}`);
     setReduceDialog(null);
     setReduceAmount(1);
@@ -42,7 +47,7 @@ export default function Inventory() {
 
   const handleDelete = async (product) => {
     await base44.entities.Product.delete(product.id);
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${product.name} anbardan silindi`);
     setDeleteConfirm(null);
   };
@@ -54,7 +59,7 @@ export default function Inventory() {
       stock_quantity: newQty,
       in_stock: newQty > 0,
     });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${restockDialog.name}: +${restockAmount} alış qeyd edildi. Yeni stok: ${newQty}`);
     setRestockDialog(null);
     setRestockAmount(10);

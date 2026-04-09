@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
-import { useClub } from '@/hooks/useClub';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,18 +48,21 @@ export default function CashierPanel() {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['cashier-sessions', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'completed', club_owner_id: clubOwnerId }, '-created_date', 500) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'completed' }, '-created_date', 500) : [],
+    enabled: !!user,
   });
 
   const { data: activeSessions = [] } = useQuery({
     queryKey: ['active-sessions', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [],
+    enabled: !!user,
     refetchInterval: 15000,
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['cashier-orders', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.Order.filter({ club_owner_id: clubOwnerId }, '-created_date', 500) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Order, user, {}, '-created_date', 500) : [],
+    enabled: !!user,
   });
 
   const todaySessions = useMemo(() => sessions.filter(s => {

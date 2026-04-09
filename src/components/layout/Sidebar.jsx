@@ -7,15 +7,14 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/owner', label: 'Owner Panel', icon: Crown, roles: ['owner'] },
-  { path: '/', label: 'İdarə Paneli', icon: LayoutDashboard, roles: ['admin', 'user'] },
+  { path: '/', label: 'İdarə Paneli', icon: LayoutDashboard, roles: ['admin'] },
   { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
+  { path: '/cashier', label: 'Kassir Paneli', icon: Receipt, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
   { path: '/inventory', label: 'Anbar', icon: Warehouse, roles: ['admin'] },
   { path: '/expenses', label: 'Xərclər', icon: DollarSign, roles: ['admin'] },
-  { path: '/cashier', label: 'Kassir Paneli', icon: Receipt, roles: ['admin', 'user'] },
   { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
-  { path: '/import', label: 'Məlumat İdxalı', icon: Upload, roles: ['admin'] },
   { path: '/admin', label: 'Sistem Paneli', icon: ShieldAlert, roles: ['admin'] },
 ];
 

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap, Users, Link2, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 import { DEFAULT_TABLES, CATEGORY_LABELS, getPsRate } from '@/lib/tableConfig';
-import { useClub } from '@/hooks/useClub';
+import { useClub, fetchClubEntities } from '@/hooks/useClub';
 
 const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, simulator: Tv2 };
 
@@ -26,7 +26,8 @@ export default function Settings() {
 
   const { data: tables = [] } = useQuery({
     queryKey: ['tables', clubOwnerId],
-    queryFn: () => clubOwnerId ? base44.entities.GameTable.filter({ club_owner_id: clubOwnerId }, 'order_number') : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
+    enabled: !!user,
   });
 
   const { data: allUsers = [] } = useQuery({
