@@ -130,7 +130,7 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
         {/* Actions */}
         <div className="space-y-1.5">
           {!isOccupied && !isLocked &&
-          <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onStart(table)}>
+          <Button size="sm" className="bg-primary text-[hsl(var(--destructive-foreground))] px-3 text-xs font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-8 w-full hover:bg-primary/90" onClick={() => onStart(table)}>
               <Play className="text-[hsl(var(--chart-5))] mr-1.5 lucide lucide-play w-3.5 h-3.5" /> Aç
             </Button>
           }
