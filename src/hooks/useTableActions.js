@@ -23,7 +23,29 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
   };
 
-  const startSession = async (table, durationMinutes, hourlyRateOverride = null) => {
+  const upsertCustomer = async (phone, name, totalCost) => {
+    if (!phone) return;
+    try {
+      const existing = await base44.entities.Customer.filter({ phone, club_owner_id: clubOwnerId });
+      if (existing.length > 0) {
+        const c = existing[0];
+        await base44.entities.Customer.update(c.id, {
+          total_sessions: (c.total_sessions || 0) + 1,
+          total_spent: roundCost((c.total_spent || 0) + totalCost),
+          last_visit: new Date().toISOString(),
+          ...(name && !c.name ? { name } : {}),
+        });
+      } else {
+        await base44.entities.Customer.create({
+          phone, name: name || '', total_sessions: 1,
+          total_spent: totalCost, last_visit: new Date().toISOString(),
+          club_owner_id: clubOwnerId,
+        });
+      }
+    } catch {}
+  };
+
+  const startSession = async (table, durationMinutes, hourlyRateOverride = null, customerPhone = null, customerName = null) => {
     if (['locked', 'offline', 'maintenance', 'occupied'].includes(table.status)) {
       toast.error('Bu masa sessiya üçün uygun deyil');
       return;
@@ -43,6 +65,7 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
       session_cost: sessionCost, orders_cost: 0, total_cost: sessionCost,
       status: 'active', paid: false, is_unlimited: isUnlimited,
       club_owner_id: clubOwnerId,
+      ...(customerPhone ? { customer_phone: customerPhone, customer_name: customerName || '' } : {}),
     });
 
     await base44.entities.GameTable.update(table.id, { status: 'occupied', current_session_id: session.id });
@@ -93,6 +116,8 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
       pause_start: null,
     });
     await base44.entities.GameTable.update(table.id, { status: 'available', current_session_id: '' });
+    // Auto-upsert customer record
+    await upsertCustomer(session.customer_phone, session.customer_name, totalCost);
     invalidate();
     const change = amountPaid && amountPaid > totalCost ? ` | Qaytarılacaq: ${roundCost(amountPaid - totalCost)} ₼` : '';
     toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼${change}`);

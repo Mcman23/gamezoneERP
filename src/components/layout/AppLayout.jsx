@@ -28,22 +28,9 @@ export default function AppLayout() {
     }
   }, [user, location.pathname]);
 
-  // Gate admin users without active subscription
-  if (!subLoading && user?.role === 'admin' && !hasSubscription) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
-          <Lock className="w-8 h-8 text-destructive" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Abunəliyiniz yoxdur</h1>
-        <p className="text-muted-foreground mb-1">Abunəliyiniz yoxdur və ya müddəti bitib.</p>
-        <p className="text-sm text-muted-foreground">Zəhmət olmasa sistem sahibi ilə əlaqə saxlayın.</p>
-        <button onClick={() => base44.auth.logout()} className="mt-6 px-4 py-2 rounded-lg bg-secondary text-sm text-muted-foreground hover:text-foreground transition-colors">Çıxış</button>
-      </div>
-    );
-  }
+  // Subscription gate deactivated
 
-  const warningBanner = hasSubscription && daysUntilExpiry !== null && daysUntilExpiry <= 7;
+  const warningBanner = false; // subscription banner deactivated
 
   return (
     <div className="min-h-screen bg-background">

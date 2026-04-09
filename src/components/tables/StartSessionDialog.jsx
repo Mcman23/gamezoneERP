@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Clock, Infinity, Gamepad2 } from 'lucide-react';
+import { Clock, Infinity, Gamepad2, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { roundCost } from '@/lib/tableConfig';
 
@@ -22,6 +22,8 @@ export default function StartSessionDialog({ open, onOpenChange, table, onConfir
   const [mode, setMode] = useState('timed');
   const [duration, setDuration] = useState(60);
   const [psModel, setPsModel] = useState(null);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState('');
 
   useEffect(() => {
     if (open && isPS(table)) {
@@ -38,10 +40,12 @@ export default function StartSessionDialog({ open, onOpenChange, table, onConfir
   const perMinute = roundCost(effectiveRate / 60);
 
   const handleConfirm = () => {
-    onConfirm(table, mode === 'unlimited' ? null : duration, isPS(table) && psModel ? effectiveRate : null);
+    onConfirm(table, mode === 'unlimited' ? null : duration, isPS(table) && psModel ? effectiveRate : null, customerPhone.trim() || null, customerName.trim() || null);
     onOpenChange(false);
     setDuration(60);
     setMode('timed');
+    setCustomerPhone('');
+    setCustomerName('');
   };
 
   return (
@@ -120,6 +124,17 @@ export default function StartSessionDialog({ open, onOpenChange, table, onConfir
               </div>
             </>
           )}
+        </div>
+        {/* Customer info */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Phone className="w-3 h-3" /> Telefon (istəyə bağlı)</Label>
+            <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="050xxxxxxx" className="bg-secondary border-border" />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1">Ad (istəyə bağlı)</Label>
+            <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Müştəri adı" className="bg-secondary border-border" />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Ləğv et</Button>

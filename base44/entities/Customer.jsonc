@@ -1,0 +1,36 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "M\u00fc\u015ft\u0259ri ad\u0131"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u018flaq\u0259 n\u00f6mr\u0259si"
+    },
+    "total_sessions": {
+      "type": "number",
+      "default": 0,
+      "description": "\u00dcmumi sessiya say\u0131"
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0,
+      "description": "\u00dcmumi x\u0259rcl\u0259nmi\u015f m\u0259bl\u0259\u011f (\u20bc)"
+    },
+    "last_visit": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Son ziyar\u0259t tarixi"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin ID-si"
+    }
+  },
+  "required": [
+    "phone"
+  ]
+}
