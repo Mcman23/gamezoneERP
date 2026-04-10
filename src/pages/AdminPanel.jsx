@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ShieldAlert, Trash2, AlertTriangle, Database, Clock, ShoppingCart, CalendarDays, Monitor, Lock, Unlock, PowerOff, RotateCcw, Activity, Crown, Plus, X } from 'lucide-react';
+import { ShieldAlert, Trash2, AlertTriangle, Database, Clock, ShoppingCart, Monitor, Lock, Unlock, PowerOff, Activity, Crown, Plus, X, Users, RefreshCw, Hash } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -29,6 +29,11 @@ export default function AdminPanel() {
   const [subDialog, setSubDialog] = useState(false);
   const [subForm, setSubForm] = useState({ user_id: '', user_email: '', user_name: '', plan: 'monthly', price: '', note: '' });
   const [savingSub, setSavingSub] = useState(false);
+  const [roleDialog, setRoleDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newRole, setNewRole] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   const { data: sessions = [] } = useQuery({ queryKey: ['all-sessions-admin', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
   const { data: allSubscriptions = [] } = useQuery({ queryKey: ['all-subscriptions'], queryFn: () => base44.entities.Subscription.list('-created_date', 100) });
@@ -93,6 +98,24 @@ export default function AdminPanel() {
     toast.success('Abunəlik ləğv edildi');
   };
 
+  const handleRoleChange = async () => {
+    if (!selectedUser || !newRole) return;
+    await base44.entities.User.update(selectedUser.id, { role: newRole });
+    queryClient.invalidateQueries({ queryKey: ['all-users-admin'] });
+    toast.success(`${selectedUser.full_name} — rol dəyişdirildi: ${newRole}`);
+    setRoleDialog(false);
+  };
+
+  const handleBackfillCodes = async () => {
+    setBackfilling(true);
+    try {
+      const res = await base44.functions.invoke('assignAllUserCodes', {});
+      toast.success(`${res.data?.assigned || 0} istifadəçiyə kod təyin edildi`);
+      queryClient.invalidateQueries({ queryKey: ['all-users-admin'] });
+    } catch (e) { toast.error(e.message); }
+    setBackfilling(false);
+  };
+
   const handleTableAction = async (table, action) => {
     if (action === 'lock') {
       if (table.status === 'occupied') { toast.error('Aktiv masa kilidlənə bilməz'); return; }
@@ -137,6 +160,41 @@ export default function AdminPanel() {
           </Card>
         ))}
       </div>
+
+      {/* User Management */}
+      <Card className="border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> İstifadəçi İdarəetməsi</h3>
+          <Button size="sm" variant="outline" onClick={handleBackfillCodes} disabled={backfilling} className="gap-1 text-xs">
+            <RefreshCw className={`w-3.5 h-3.5 ${backfilling ? 'animate-spin' : ''}`} /> Kodları yenilə
+          </Button>
+        </div>
+        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          {allUsers.map(u => (
+            <div key={u.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-secondary/30">
+              <div>
+                <p className="font-medium text-foreground text-sm">{u.full_name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-muted-foreground">{u.email}</p>
+                  {u.user_code && (
+                    <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono flex items-center gap-1">
+                      <Hash className="w-2.5 h-2.5" />{u.user_code}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={u.role === 'admin' ? 'default' : u.role === 'owner' ? 'destructive' : 'secondary'} className="text-[10px]">
+                  {u.role === 'admin' ? 'ADMİN' : u.role === 'owner' ? 'OWNer' : 'KASSİR'}
+                </Badge>
+                {u.role !== 'owner' && (
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSelectedUser(u); setNewRole(u.role); setRoleDialog(true); }}>Rol</Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* Remote table control */}
       <Card className="border-border p-5">
@@ -208,6 +266,32 @@ export default function AdminPanel() {
           <Trash2 className="w-4 h-4" /> Bütün məlumatları sil
         </Button>
       </Card>
+
+      {/* Role Change Dialog */}
+      <Dialog open={roleDialog} onOpenChange={setRoleDialog}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader><DialogTitle className="text-foreground flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Rol Dəyiş</DialogTitle></DialogHeader>
+          {selectedUser && (
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-muted-foreground">{selectedUser.full_name} ({selectedUser.email})</p>
+              <div>
+                <Label className="text-xs text-muted-foreground">Yeni rol</Label>
+                <Select value={newRole} onValueChange={setNewRole}>
+                  <SelectTrigger className="bg-secondary border-border mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin (Klub sahibi)</SelectItem>
+                    <SelectItem value="user">Kassir</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialog(false)}>Ləğv et</Button>
+            <Button onClick={handleRoleChange} className="bg-primary hover:bg-primary/90 text-primary-foreground">Saxla</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Subscription Dialog */}
       <Dialog open={subDialog} onOpenChange={setSubDialog}>

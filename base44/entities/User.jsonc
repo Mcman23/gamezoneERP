@@ -19,6 +19,10 @@
     "club_name": {
       "type": "string",
       "description": "Klub ad\u0131 (yaln\u0131z admin \u00fc\u00e7\u00fcn)"
+    },
+    "user_code": {
+      "type": "string",
+      "description": "Unikal istifad\u0259\u00e7i kodu (4-6 r\u0259q\u0259m)"
     }
   },
   "required": []
