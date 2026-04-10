@@ -100,7 +100,11 @@ export default function AdminPanel() {
 
   const handleRoleChange = async () => {
     if (!selectedUser || !newRole) return;
-    await base44.entities.User.update(selectedUser.id, { role: newRole });
+    await base44.functions.invoke('updateUserRole', {
+      target_user_id: selectedUser.id,
+      role: newRole,
+      club_owner_id: user?.id,
+    });
     queryClient.invalidateQueries({ queryKey: ['all-users-admin'] });
     toast.success(`${selectedUser.full_name} — rol dəyişdirildi: ${newRole}`);
     setRoleDialog(false);
