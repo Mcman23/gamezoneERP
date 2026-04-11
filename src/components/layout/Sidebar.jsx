@@ -6,18 +6,18 @@ import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { path: '/owner', label: 'Owner Panel', icon: Crown, roles: ['owner'] },
-  { path: '/', label: 'İdarə Paneli', icon: LayoutDashboard, roles: ['admin'] },
-  { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
-  { path: '/cashier', label: 'Kassir Paneli', icon: Receipt, roles: ['admin', 'user'] },
-  { path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
-  { path: '/inventory', label: 'Anbar', icon: Warehouse, roles: ['admin'] },
-  { path: '/expenses', label: 'Xərclər', icon: DollarSign, roles: ['admin'] },
-  { path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
-  { path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
-  { path: '/customers', label: 'Müştərilər', icon: Users, roles: ['admin'] },
-  { path: '/admin', label: 'Sistem Paneli', icon: ShieldAlert, roles: ['admin'] },
-];
+{ path: '/owner', label: 'Owner Panel', icon: Crown, roles: ['owner'] },
+{ path: '/', label: 'İdarə Paneli', icon: LayoutDashboard, roles: ['admin'] },
+{ path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
+{ path: '/cashier', label: 'Kassir Paneli', icon: Receipt, roles: ['admin', 'user'] },
+{ path: '/products', label: 'Məhsullar', icon: Coffee, roles: ['admin'] },
+{ path: '/inventory', label: 'Anbar', icon: Warehouse, roles: ['admin'] },
+{ path: '/expenses', label: 'Xərclər', icon: DollarSign, roles: ['admin'] },
+{ path: '/reports', label: 'Hesabatlar', icon: BarChart3, roles: ['admin'] },
+{ path: '/settings', label: 'Tənzimləmələr', icon: Settings, roles: ['admin'] },
+{ path: '/customers', label: 'Müştərilər', icon: Users, roles: ['admin'] },
+{ path: '/admin', label: 'Sistem Paneli', icon: ShieldAlert, roles: ['admin'] }];
+
 
 export default function Sidebar({ collapsed, setCollapsed, userRole }) {
   const location = useLocation();
@@ -32,7 +32,7 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
         <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
           <Gamepad2 className="w-5 h-5 text-primary" />
         </div>
-        {!collapsed && <span className="text-lg font-bold text-foreground tracking-tight truncate">GameZone</span>}
+        {!collapsed && <span className="text-lg font-bold text-foreground tracking-tight truncate">Playroom</span>}
       </div>
 
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
@@ -47,8 +47,8 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
                 <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                 {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
               </div>
-            </Link>
-          );
+            </Link>);
+
         })}
       </nav>
 
@@ -61,6 +61,6 @@ export default function Sidebar({ collapsed, setCollapsed, userRole }) {
           {!collapsed && <span className="ml-2 text-sm">Çıxış</span>}
         </Button>
       </div>
-    </aside>
-  );
+    </aside>);
+
 }
