@@ -9,11 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap, Users, Link2, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 import { DEFAULT_TABLES, CATEGORY_LABELS, getPsRate } from '@/lib/tableConfig';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
-import CashierManagement from '@/components/settings/CashierManagement';
 
 const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, simulator: Tv2 };
 
@@ -29,6 +28,12 @@ export default function Settings() {
     queryKey: ['tables', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
     enabled: !!user,
+  });
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
   });
 
   const resetForm = () => {
@@ -72,6 +77,26 @@ export default function Settings() {
     toast.success(`${DEFAULT_TABLES.length} masa avtomatik yaradıldı`);
   };
 
+  const linkCashier = async (cashierUser) => {
+    await base44.functions.invoke('updateUserRole', {
+      target_user_id: cashierUser.id,
+      role: 'user',
+      club_owner_id: clubOwnerId,
+    });
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    toast.success(`${cashierUser.full_name} kluba əlavə edildi`);
+  };
+
+  const unlinkCashier = async (cashierUser) => {
+    await base44.functions.invoke('updateUserRole', {
+      target_user_id: cashierUser.id,
+      role: 'user',
+      club_owner_id: '',
+    });
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    toast.success(`${cashierUser.full_name} klubdan çıxarıldı`);
+  };
+
   const handlePsChange = (field, value) => {
     const newForm = { ...form, [field]: value };
     if ((newForm.category === 'playstation' || newForm.category === 'cabinet') && newForm.ps_model !== 'none') {
@@ -83,6 +108,10 @@ export default function Settings() {
   const getCategory = (t) => t.category || (t.type === 'pc' ? 'computer' : t.type) || 'computer';
   const grouped = {};
   ['computer', 'playstation', 'cabinet', 'simulator'].forEach(cat => { grouped[cat] = tables.filter(t => getCategory(t) === cat); });
+
+  const cashiers = allUsers.filter(u => u.role === 'user' && u.id !== user?.id);
+  const linkedCashiers = cashiers.filter(u => u.club_owner_id === clubOwnerId);
+  const availableCashiers = cashiers.filter(u => !u.club_owner_id);
 
   return (
     <div className="space-y-6">
@@ -105,7 +134,54 @@ export default function Settings() {
 
       {/* Cashier Management — admin only */}
       {isAdmin && (
-        <CashierManagement user={user} clubOwnerId={clubOwnerId} />
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-foreground">Kassir İdarəsi</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-4 border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-3">Kluba bağlı kassirler ({linkedCashiers.length})</p>
+              {linkedCashiers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Hələ kassir əlavə edilməyib</p>
+              ) : (
+                <div className="space-y-2">
+                  {linkedCashiers.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => unlinkCashier(c)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
+                        <Unlink className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <Card className="p-4 border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-3">Əlavə edilməmiş istifadəçilər ({availableCashiers.length})</p>
+              {availableCashiers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Hamı artıq bir kluba bağlıdır</p>
+              ) : (
+                <div className="space-y-2">
+                  {availableCashiers.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => linkCashier(c)} className="h-7 gap-1 text-xs">
+                        <Link2 className="w-3 h-3" /> Əlavə et
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
       )}
 
       {/* Tables by category */}
