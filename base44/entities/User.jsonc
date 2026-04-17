@@ -23,6 +23,10 @@
     "user_code": {
       "type": "string",
       "description": "Unikal istifad\u0259\u00e7i kodu (4-6 r\u0259q\u0259m)"
+    },
+    "phone": {
+      "type": "string",
+      "description": "\u018flaq\u0259 n\u00f6mr\u0259si"
     }
   },
   "required": []
