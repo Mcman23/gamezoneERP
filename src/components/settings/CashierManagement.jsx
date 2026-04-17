@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Users, Link2, Unlink, Trash2, UserPlus, Phone, Mail, User, AlertTriangle, Copy, Check, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Link2, Unlink, Trash2, UserPlus, Phone, Mail, User, AlertTriangle, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CashierManagement({ user, clubOwnerId }) {
@@ -17,8 +17,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
   const [loading, setLoading] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null); // { password, email }
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '' });
 
   const { data: allUsers = [], isLoading } = useQuery({
     queryKey: ['all-users'],
@@ -37,14 +36,12 @@ export default function CashierManagement({ user, clubOwnerId }) {
     u => u.role === 'user' && !u.club_owner_id
   );
 
-  const resetForm = () => { setForm({ full_name: '', email: '', phone: '', password: '' }); setShowPassword(false); };
+  const resetForm = () => setForm({ full_name: '', email: '', phone: '' });
 
   const handleInvite = async () => {
     if (!form.full_name.trim()) { toast.error('Ad Soyad məcburidir'); return; }
     if (!form.email.trim() && !form.phone.trim()) { toast.error('Email və ya telefon məcburidir'); return; }
     if (!form.email.trim()) { toast.error('Qeydiyyat üçün email ünvanı məcburidir'); return; }
-
-    if (!form.password.trim() || form.password.trim().length < 6) { toast.error('Şifrə minimum 6 simvol olmalıdır'); return; }
 
     setLoading(true);
     try {
@@ -53,7 +50,6 @@ export default function CashierManagement({ user, clubOwnerId }) {
         email: form.email.trim().toLowerCase(),
         phone: form.phone.trim(),
         club_owner_id: clubOwnerId,
-        password: form.password.trim(),
       });
 
       setCreatedCredentials({
@@ -114,10 +110,12 @@ export default function CashierManagement({ user, clubOwnerId }) {
     }
   };
 
-  const copyPassword = (text) => {
-    navigator.clipboard.writeText(text || createdCredentials?.password || '');
-    setCopiedPassword(true);
-    setTimeout(() => setCopiedPassword(false), 2000);
+  const copyPassword = () => {
+    if (createdCredentials?.password) {
+      navigator.clipboard.writeText(createdCredentials.password);
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+    }
   };
 
   if (isLoading) return (
@@ -275,34 +273,17 @@ export default function CashierManagement({ user, clubOwnerId }) {
                 placeholder="050xxxxxxx"
               />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                🔒 Şifrə <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative mt-1">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  className="bg-secondary border-border pr-9"
-                  placeholder="Minimum 6 simvol"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Bu şifrə kassirə email ilə göndəriləcək.</p>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">
+                ✉️ Kassirə email göndəriləcək. Emaildə giriş linki, şifrə və giriş məlumatları olacaq.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setInviteDialog(false); resetForm(); }}>Ləğv et</Button>
             <Button
               onClick={handleInvite}
-              disabled={loading || !form.full_name.trim() || !form.email.trim() || !form.password.trim()}
+              disabled={loading || !form.full_name.trim() || !form.email.trim()}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {loading ? 'Qeydiyyat edilir...' : 'Kassir yarat'}
