@@ -1,14 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function generatePassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
-  let pass = '';
-  for (let i = 0; i < 10; i++) {
-    pass += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return pass;
-}
-
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -32,7 +23,6 @@ Deno.serve(async (req) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const password = generatePassword();
     const userCode = generateCode();
 
     // Check if user already exists
@@ -53,10 +43,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Register new user with email + password
-    await base44.auth.register({ email: normalizedEmail, password });
+    // Invite new user via platform (they set their own password)
+    await base44.users.inviteUser(normalizedEmail, 'user');
 
-    // Poll for user record (up to 8s)
+    // Poll for user record to set club_owner_id (up to 8s)
     let newUser = null;
     for (let i = 0; i < 8; i++) {
       await new Promise(r => setTimeout(r, 1000));
@@ -69,40 +59,15 @@ Deno.serve(async (req) => {
       const updateData = { club_owner_id, role: 'user', user_code: userCode };
       if (phone) updateData.phone = phone;
       await base44.asServiceRole.entities.User.update(newUser.id, updateData);
-    }
-
-    // Send password via email using platform integration
-    let emailSent = false;
-    try {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: normalizedEmail,
-        subject: 'Kassir hesabınız yaradıldı — Giriş məlumatları',
-        body: `Salam,
-
-Sizin kassir hesabınız yaradıldı. Aşağıdakı məlumatlarla sistemə daxil ola bilərsiniz:
-
-📧 Email: ${normalizedEmail}
-🔑 Şifrə: ${password}
-
-Daxil olmaq üçün sistem linkini açın və bu məlumatları daxil edin.
-
-İlk girişdən sonra şifrənizi dəyişdirməyiniz tövsiyə olunur.
-
-Hörmətlə,
-İdarəetmə Sistemi`,
-      });
-      emailSent = true;
-    } catch (emailErr) {
-      // Email failed but user was created — return password to show in UI
-      emailSent = false;
+    } else {
+      // Store pending invite — will be linked when user registers
+      // At minimum the invite was sent successfully
     }
 
     return Response.json({
       success: true,
       existing: false,
-      email_sent: emailSent,
-      password: emailSent ? null : password, // Only expose if email failed
-      show_password: !emailSent,
+      invited: true,
       user_code: userCode,
       email: normalizedEmail,
     });

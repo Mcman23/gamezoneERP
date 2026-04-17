@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Users, Link2, Unlink, Trash2, UserPlus, Phone, Mail, AlertTriangle, RefreshCw, CheckCircle, Copy, Check } from 'lucide-react';
+import { Users, Link2, Unlink, Trash2, UserPlus, Phone, Mail, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CashierManagement({ user, clubOwnerId }) {
@@ -14,8 +14,6 @@ export default function CashierManagement({ user, clubOwnerId }) {
   const [inviteDialog, setInviteDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [createdResult, setCreatedResult] = useState(null);
-  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ email: '', phone: '' });
 
   const { data: allUsers = [], isLoading, refetch } = useQuery({
@@ -49,13 +47,8 @@ export default function CashierManagement({ user, clubOwnerId }) {
 
       if (data?.existing) {
         toast.success('Mövcud istifadəçi kluba bağlandı');
-      } else if (data?.email_sent) {
-        toast.success('Giriş məlumatları kassirin emailinə göndərildi!');
-      } else if (data?.show_password && data?.password) {
-        // Email failed — show password in a dialog
-        setCreatedResult({ email: data.email, password: data.password });
       } else {
-        toast.success('Kassir yaradıldı');
+        toast.success('Kassirə dəvət emaili göndərildi. Kassir linki klikləyib şifrəsini özü təyin edəcək.');
       }
     } catch (e) {
       let msg = e?.response?.data?.error || e.message || 'Xəta baş verdi';
@@ -104,14 +97,6 @@ export default function CashierManagement({ user, clubOwnerId }) {
     }
   };
 
-  const copyPassword = () => {
-    if (createdResult?.password) {
-      navigator.clipboard.writeText(createdResult.password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   if (isLoading) return (
     <div className="flex items-center justify-center h-20">
       <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -135,7 +120,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
             onClick={() => { resetForm(); setInviteDialog(true); }}
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-xs"
           >
-            <UserPlus className="w-3.5 h-3.5" /> Kassir əlavə et
+            <UserPlus className="w-3.5 h-3.5" /> Kassir dəvət et
           </Button>
         </div>
       </div>
@@ -206,10 +191,10 @@ export default function CashierManagement({ user, clubOwnerId }) {
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-primary" /> Kassir Əlavə Et
+              <UserPlus className="w-4 h-4 text-primary" /> Kassir Dəvət Et
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs">
-              Kassirin emailini daxil edin. Hesab yaradılacaq və giriş məlumatları emailə göndəriləcək.
+              Kassirin emailini daxil edin. Ona dəvət emaili göndəriləcək — kassir linkə klikləyib öz şifrəsini təyin edəcək.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -238,8 +223,11 @@ export default function CashierManagement({ user, clubOwnerId }) {
                 placeholder="050xxxxxxx"
               />
             </div>
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-muted-foreground">
-              ℹ️ Kassir üçün hesab yaradılacaq. Email və şifrə kassirin emailinə göndəriləcək. Email çatmasa şifrəni ekranda görəcəksiniz.
+            <div className="bg-secondary border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
+              <p className="font-medium text-foreground">Necə işləyir:</p>
+              <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">1</span><span>Kassirə dəvət emaili göndərilir</span></div>
+              <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">2</span><span>Kassir emaildəki linki klikləyib şifrəsini özü təyin edir</span></div>
+              <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">3</span><span>Hesab aktivləşir, kassir sistemə daxil ola bilir</span></div>
             </div>
           </div>
           <DialogFooter>
@@ -252,48 +240,9 @@ export default function CashierManagement({ user, clubOwnerId }) {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Yaradılır...
+                  Göndərilir...
                 </span>
-              ) : 'Kassir yarat'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Password Fallback Dialog (shown only if email failed) */}
-      <Dialog open={!!createdResult} onOpenChange={() => { setCreatedResult(null); setCopied(false); }}>
-        <DialogContent className="bg-card border-border max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-foreground flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" /> Kassir Yaradıldı
-            </DialogTitle>
-            <DialogDescription className="text-yellow-500 text-xs">
-              ⚠️ Email göndərilmədi — şifrəni kassirə əl ilə bildirin.
-            </DialogDescription>
-          </DialogHeader>
-          {createdResult && (
-            <div className="space-y-3 py-2">
-              <div className="bg-secondary rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Email:</span>
-                  <span className="text-sm font-mono text-foreground">{createdResult.email}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Şifrə:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-primary font-bold">{createdResult.password}</span>
-                    <button onClick={copyPassword} className="text-muted-foreground hover:text-foreground">
-                      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Kassir bu email və şifrə ilə sistemə daxil ola bilər.</p>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => { setCreatedResult(null); setCopied(false); }} className="bg-primary hover:bg-primary/90 text-primary-foreground w-full">
-              Bağla
+              ) : 'Göndər'}
             </Button>
           </DialogFooter>
         </DialogContent>
