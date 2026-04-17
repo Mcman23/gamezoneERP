@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
@@ -14,10 +14,9 @@ Deno.serve(async (req) => {
     }
 
     const updateData = { role };
-    if (role === 'user' && club_owner_id) {
-      updateData.club_owner_id = club_owner_id;
-    } else if (role === 'admin') {
-      updateData.club_owner_id = '';
+    // Always set club_owner_id if provided (even empty string to unlink)
+    if (typeof club_owner_id !== 'undefined') {
+      updateData.club_owner_id = club_owner_id || '';
     }
 
     await base44.asServiceRole.entities.User.update(target_user_id, updateData);
