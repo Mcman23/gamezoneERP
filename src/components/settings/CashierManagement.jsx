@@ -78,7 +78,11 @@ export default function CashierManagement({ user, clubOwnerId }) {
         toast.warning('Kassir yaradıldı. Email göndərilmədi — şifrəni əl ilə bildirin.');
       }
     } catch (e) {
-      const msg = e?.response?.data?.error || e.message || 'Xəta baş verdi';
+      const raw = e?.response?.data?.error || e.message || 'Xəta baş verdi';
+      // Translate common platform errors
+      let msg = raw;
+      if (raw.includes('Disposable email')) msg = 'Etibarsız email (disposable). Real email ünvanı daxil edin.';
+      if (raw.includes('already exists') || raw.includes('already registered')) msg = 'Bu email artıq sistemdə qeydiyyatdadır.';
       toast.error(msg);
     }
     setLoading(false);

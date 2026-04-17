@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 function generatePassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   let pass = '';
   for (let i = 0; i < 10; i++) {
     pass += chars[Math.floor(Math.random() * chars.length)];
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const existingUser = allUsers.find(u => u.email === normalizedEmail);
 
     if (existingUser) {
-      // User exists — just update their club association
+      // User exists — update their club association
       await base44.asServiceRole.entities.User.update(existingUser.id, {
         club_owner_id: club_owner_id,
         role: 'user',
@@ -60,53 +60,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Invite new user via platform (platform sends the registration email automatically)
-    await base44.users.inviteUser(normalizedEmail, 'user');
+    // Register new user with email + password directly
+    await base44.auth.register({ email: normalizedEmail, password });
 
-    // Poll for user record to appear (max 8 seconds)
+    // Poll for user record to appear (max 6 seconds)
     let newUser = null;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
       await new Promise(r => setTimeout(r, 1000));
       const users = await base44.asServiceRole.entities.User.list();
       newUser = users.find(u => u.email === normalizedEmail);
       if (newUser) break;
     }
 
-    if (newUser) {
-      // Update user with club info, name, code
-      await base44.asServiceRole.entities.User.update(newUser.id, {
-        club_owner_id: club_owner_id,
-        role: 'user',
-        user_code: userCode,
-        ...(phone ? { phone } : {}),
-      });
+    if (!newUser) {
+      return Response.json({ error: 'İstifadəçi yaradıldı lakin tapılmadı. Bir az gözləyib yenidən yoxlayın.' }, { status: 500 });
     }
 
-    // Try to send credentials email — if fails, still return success with password
-    let emailSent = false;
-    try {
-      const clubName = caller.club_name || 'Oyun Mərkəzi';
-      await base44.integrations.Core.SendEmail({
-        to: normalizedEmail,
-        subject: `${clubName} — Kassir hesabı yaradıldı`,
-        body: `Salam ${full_name},\n\nSiz ${clubName} sisteminə kassir kimi əlavə edildiniz.\n\nGiriş məlumatlarınız:\n📧 Email: ${normalizedEmail}\n🔑 Müvəqqəti şifrə: ${password}\n\nSistemi ilk dəfə açdığınızda bu şifrə ilə daxil olun və dəyişdirin.\n\n${phone ? `Telefon: ${phone}\n` : ''}Hörmətlə,\n${clubName}`,
-      });
-      emailSent = true;
-    } catch (_emailError) {
-      // Email sending failed — admin will see password in UI
-      emailSent = false;
-    }
+    // Update user with club info, name, code
+    await base44.asServiceRole.entities.User.update(newUser.id, {
+      club_owner_id: club_owner_id,
+      role: 'user',
+      user_code: userCode,
+      ...(phone ? { phone } : {}),
+    });
 
     return Response.json({
       success: true,
-      message: emailSent
-        ? 'Kassir yaradıldı və email göndərildi'
-        : 'Kassir yaradıldı (email göndərilmədi — şifrəni əl ilə bildirin)',
+      message: 'Kassir uğurla yaradıldı',
       password,
       user_code: userCode,
-      email_sent: emailSent,
+      email: normalizedEmail,
       existing: false,
     });
+
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
