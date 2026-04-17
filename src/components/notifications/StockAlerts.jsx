@@ -4,11 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, PackageX } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function StockAlerts() {
+export default function StockAlerts({ clubOwnerId }) {
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list(),
-    refetchInterval: 60000,
+    queryKey: ['products-stock', clubOwnerId],
+    queryFn: () => clubOwnerId
+      ? base44.entities.Product.filter({ club_owner_id: clubOwnerId })
+      : base44.entities.Product.list(),
+    refetchInterval: 30000,
   });
 
   const outOfStock = products.filter(p => (p.stock_quantity ?? 0) === 0 && p.in_stock !== false);

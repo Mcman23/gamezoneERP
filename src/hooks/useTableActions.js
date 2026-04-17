@@ -147,16 +147,24 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     await base44.entities.Session.update(session.id, {
       orders_cost: newOrdersCost, total_cost: roundCost((session.session_cost || 0) + newOrdersCost),
     });
-    // Deduct stock
+    // Deduct stock and check low-stock alerts
     await Promise.all(items.map(async (item) => {
       const products = await base44.entities.Product.filter({ id: item.product_id });
       if (products.length > 0) {
         const p = products[0];
         const newQty = Math.max(0, (p.stock_quantity ?? 0) - item.quantity);
         await base44.entities.Product.update(p.id, { stock_quantity: newQty, in_stock: newQty > 0 });
+        // Warn if critically low
+        const threshold = p.low_stock_threshold ?? 5;
+        if (newQty === 0) {
+          toast.error(`⚠️ ${p.name} stokda bitti!`, { duration: 5000 });
+        } else if (newQty <= threshold) {
+          toast.warning(`⚠️ ${p.name} az qaldı — ${newQty} ədəd`, { duration: 5000 });
+        }
       }
     }));
     invalidate();
+    queryClient.invalidateQueries({ queryKey: ['cashier-orders', clubOwnerId] });
     toast.success(`${table.name} sifarişi — ${totalAmount.toFixed(2)} ₼`);
   };
 

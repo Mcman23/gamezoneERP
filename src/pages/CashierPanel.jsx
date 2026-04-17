@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Receipt, Banknote, CreditCard, Monitor, ShoppingCart, Clock, Download } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import ActiveOrders from '@/components/cashier/ActiveOrders';
+import StockAlerts from '@/components/notifications/StockAlerts';
 
 function exportCashierReport(data) {
   const rows = [
@@ -116,6 +118,12 @@ export default function CashierPanel() {
           </Card>
         ))}
       </div>
+
+      {/* Stock alerts */}
+      <StockAlerts clubOwnerId={clubOwnerId} />
+
+      {/* Active Orders — real-time */}
+      <ActiveOrders user={user} clubOwnerId={clubOwnerId} />
 
       {/* Recent sessions */}
       <Card className="border-border p-5">
