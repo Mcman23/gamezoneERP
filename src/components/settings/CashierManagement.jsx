@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Users, Link2, Unlink, Trash2, UserPlus, Phone, Mail, AlertTriangle, RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { Users, Link2, Unlink, Trash2, UserPlus, Phone, Mail, AlertTriangle, RefreshCw, CheckCircle, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CashierManagement({ user, clubOwnerId }) {
@@ -15,6 +14,8 @@ export default function CashierManagement({ user, clubOwnerId }) {
   const [inviteDialog, setInviteDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [createdResult, setCreatedResult] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ email: '', phone: '' });
 
   const { data: allUsers = [], isLoading, refetch } = useQuery({
@@ -23,15 +24,8 @@ export default function CashierManagement({ user, clubOwnerId }) {
     enabled: !!user,
   });
 
-  // Users linked to this club
-  const linkedCashiers = allUsers.filter(
-    u => u.role === 'user' && u.club_owner_id === clubOwnerId
-  );
-
-  // Users not linked to any club (available to add)
-  const unlinkedCashiers = allUsers.filter(
-    u => u.role === 'user' && !u.club_owner_id
-  );
+  const linkedCashiers = allUsers.filter(u => u.role === 'user' && u.club_owner_id === clubOwnerId);
+  const unlinkedCashiers = allUsers.filter(u => u.role === 'user' && !u.club_owner_id);
 
   const resetForm = () => setForm({ email: '', phone: '' });
 
@@ -41,7 +35,6 @@ export default function CashierManagement({ user, clubOwnerId }) {
       toast.error('Email formatı yanlışdır');
       return;
     }
-
     setLoading(true);
     try {
       const res = await base44.functions.invoke('inviteCashier', {
@@ -49,22 +42,23 @@ export default function CashierManagement({ user, clubOwnerId }) {
         phone: form.phone.trim(),
         club_owner_id: clubOwnerId,
       });
-
       const data = res.data;
-
       queryClient.invalidateQueries({ queryKey: ['all-users', clubOwnerId] });
       resetForm();
       setInviteDialog(false);
 
       if (data?.existing) {
         toast.success('Mövcud istifadəçi kluba bağlandı');
+      } else if (data?.email_sent) {
+        toast.success('Giriş məlumatları kassirin emailinə göndərildi!');
+      } else if (data?.show_password && data?.password) {
+        // Email failed — show password in a dialog
+        setCreatedResult({ email: data.email, password: data.password });
       } else {
-        toast.success('Dəvət emaili göndərildi! Kassir emaildəki linkə klikləyib qeydiyyatı tamamlamalıdır.');
+        toast.success('Kassir yaradıldı');
       }
     } catch (e) {
       let msg = e?.response?.data?.error || e.message || 'Xəta baş verdi';
-      if (msg.includes('Disposable email')) msg = 'Etibarsız email. Real email ünvanı daxil edin.';
-      if (msg.includes('already')) msg = 'Bu email artıq sistemdə qeydiyyatdadır.';
       toast.error(msg);
     }
     setLoading(false);
@@ -101,14 +95,20 @@ export default function CashierManagement({ user, clubOwnerId }) {
   const handleDelete = async () => {
     if (!deleteDialog) return;
     try {
-      await base44.functions.invoke('deleteCashier', {
-        target_user_id: deleteDialog.id,
-      });
+      await base44.functions.invoke('deleteCashier', { target_user_id: deleteDialog.id });
       queryClient.invalidateQueries({ queryKey: ['all-users', clubOwnerId] });
-      toast.success(`${deleteDialog.full_name || deleteDialog.email} sistemdən silindi`);
+      toast.success(`${deleteDialog.full_name || deleteDialog.email} silindi`);
       setDeleteDialog(null);
     } catch (e) {
       toast.error(e?.response?.data?.error || e.message);
+    }
+  };
+
+  const copyPassword = () => {
+    if (createdResult?.password) {
+      navigator.clipboard.writeText(createdResult.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -135,16 +135,8 @@ export default function CashierManagement({ user, clubOwnerId }) {
             onClick={() => { resetForm(); setInviteDialog(true); }}
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-xs"
           >
-            <UserPlus className="w-3.5 h-3.5" /> Kassir dəvət et
+            <UserPlus className="w-3.5 h-3.5" /> Kassir əlavə et
           </Button>
-        </div>
-      </div>
-
-      {/* Info banner */}
-      <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 text-xs text-muted-foreground flex items-start gap-2">
-        <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-        <div>
-          <strong className="text-foreground">Kassir əlavə etmə qaydası:</strong> Email daxil edin → kassir dəvət emaili alacaq → linki klikləyib şifrəsini özü təyin edəcək → sistem avtomatik bağlayacaq.
         </div>
       </div>
 
@@ -163,15 +155,13 @@ export default function CashierManagement({ user, clubOwnerId }) {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{c.full_name || '—'}</p>
                     <p className="text-xs text-muted-foreground truncate">{c.email}</p>
-                    {c.user_code && (
-                      <span className="text-[10px] text-green-400 font-mono">#{c.user_code}</span>
-                    )}
+                    {c.user_code && <span className="text-[10px] text-green-400 font-mono">#{c.user_code}</span>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 ml-2">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-orange-400 hover:bg-orange-400/10" title="Klubdan çıxar" onClick={() => handleUnlink(c)}>
                       <Unlink className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" title="Sistemdən sil" onClick={() => setDeleteDialog(c)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10" title="Sil" onClick={() => setDeleteDialog(c)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -184,7 +174,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
         {/* Unlinked cashiers */}
         <Card className="p-4 border-border">
           <p className="text-xs font-medium text-muted-foreground mb-3">
-            Qeydiyyatlı, bağlanmamış istifadəçilər ({unlinkedCashiers.length})
+            Bağlanmamış istifadəçilər ({unlinkedCashiers.length})
           </p>
           {unlinkedCashiers.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">Hamısı klublara bağlıdır</p>
@@ -216,13 +206,12 @@ export default function CashierManagement({ user, clubOwnerId }) {
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-primary" /> Kassir Dəvət Et
+              <UserPlus className="w-4 h-4 text-primary" /> Kassir Əlavə Et
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs">
-              Kassirin emailini daxil edin. Ona dəvət emaili göndəriləcək — kassir linkə klikləyib öz şifrəsini təyin edəcək.
+              Kassirin emailini daxil edin. Hesab yaradılacaq və giriş məlumatları emailə göndəriləcək.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-3 py-2">
             <div>
               <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
@@ -249,25 +238,10 @@ export default function CashierManagement({ user, clubOwnerId }) {
                 placeholder="050xxxxxxx"
               />
             </div>
-
-            {/* How it works */}
-            <div className="bg-secondary rounded-lg p-3 space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Necə işləyir:</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">1</span>
-                Kassirə dəvət emaili göndərilir
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">2</span>
-                Kassir emaildəki linki klikləyib şifrəsini özü təyin edir
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">3</span>
-                Hesab aktivləşir, kassir sisteme daxil ola bilir
-              </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-muted-foreground">
+              ℹ️ Kassir üçün hesab yaradılacaq. Email və şifrə kassirin emailinə göndəriləcək. Email çatmasa şifrəni ekranda görəcəksiniz.
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => { setInviteDialog(false); resetForm(); }}>Ləğv et</Button>
             <Button
@@ -278,9 +252,48 @@ export default function CashierManagement({ user, clubOwnerId }) {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Göndərilir...
+                  Yaradılır...
                 </span>
-              ) : 'Dəvət göndər'}
+              ) : 'Kassir yarat'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Fallback Dialog (shown only if email failed) */}
+      <Dialog open={!!createdResult} onOpenChange={() => { setCreatedResult(null); setCopied(false); }}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" /> Kassir Yaradıldı
+            </DialogTitle>
+            <DialogDescription className="text-yellow-500 text-xs">
+              ⚠️ Email göndərilmədi — şifrəni kassirə əl ilə bildirin.
+            </DialogDescription>
+          </DialogHeader>
+          {createdResult && (
+            <div className="space-y-3 py-2">
+              <div className="bg-secondary rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Email:</span>
+                  <span className="text-sm font-mono text-foreground">{createdResult.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Şifrə:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono text-primary font-bold">{createdResult.password}</span>
+                    <button onClick={copyPassword} className="text-muted-foreground hover:text-foreground">
+                      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Kassir bu email və şifrə ilə sistemə daxil ola bilər.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => { setCreatedResult(null); setCopied(false); }} className="bg-primary hover:bg-primary/90 text-primary-foreground w-full">
+              Bağla
             </Button>
           </DialogFooter>
         </DialogContent>
