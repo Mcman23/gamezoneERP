@@ -24,7 +24,7 @@ export default function Inventory() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.Product, user) : [],
-    enabled: !!user,
+    enabled: !!user
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -37,7 +37,7 @@ export default function Inventory() {
     const newQty = Math.max(0, currentQty - reduceAmount);
     await base44.entities.Product.update(reduceDialog.id, {
       stock_quantity: newQty,
-      in_stock: newQty > 0,
+      in_stock: newQty > 0
     });
     queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${reduceDialog.name}: -${Math.min(reduceAmount, currentQty)} stokdan silindi. Yeni stok: ${newQty}`);
@@ -57,7 +57,7 @@ export default function Inventory() {
     const newQty = (restockDialog.stock_quantity ?? 0) + restockAmount;
     await base44.entities.Product.update(restockDialog.id, {
       stock_quantity: newQty,
-      in_stock: newQty > 0,
+      in_stock: newQty > 0
     });
     queryClient.invalidateQueries({ queryKey: ['products', clubOwnerId] });
     toast.success(`${restockDialog.name}: +${restockAmount} alış qeyd edildi. Yeni stok: ${newQty}`);
@@ -67,20 +67,20 @@ export default function Inventory() {
 
   const stats = useMemo(() => {
     const total = products.length;
-    const out = products.filter(p => (p.stock_quantity ?? 0) === 0).length;
-    const low = products.filter(p => { const q = p.stock_quantity ?? 0; return q > 0 && q <= (p.low_stock_threshold ?? 5); }).length;
-    const totalValue = products.reduce((acc, p) => acc + ((p.purchase_price || p.price || 0) * (p.stock_quantity ?? 0)), 0);
+    const out = products.filter((p) => (p.stock_quantity ?? 0) === 0).length;
+    const low = products.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 5);}).length;
+    const totalValue = products.reduce((acc, p) => acc + (p.purchase_price || p.price || 0) * (p.stock_quantity ?? 0), 0);
     return { total, out, low, totalValue };
   }, [products]);
 
   const filtered = useMemo(() => {
     let list = products;
-    if (filterStatus === 'out') list = list.filter(p => (p.stock_quantity ?? 0) === 0);
-    else if (filterStatus === 'low') list = list.filter(p => { const q = p.stock_quantity ?? 0; return q > 0 && q <= (p.low_stock_threshold ?? 5); });
-    else if (filterStatus === 'ok') list = list.filter(p => (p.stock_quantity ?? 0) > (p.low_stock_threshold ?? 5));
+    if (filterStatus === 'out') list = list.filter((p) => (p.stock_quantity ?? 0) === 0);else
+    if (filterStatus === 'low') list = list.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 5);});else
+    if (filterStatus === 'ok') list = list.filter((p) => (p.stock_quantity ?? 0) > (p.low_stock_threshold ?? 5));
     if (searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(q));
+      list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list.sort((a, b) => (a.stock_quantity ?? 0) - (b.stock_quantity ?? 0));
   }, [products, filterStatus, searchQuery]);
@@ -152,27 +152,27 @@ export default function Inventory() {
           <Input
             placeholder="Məhsul axtar..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 bg-secondary border-border"
-          />
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-secondary border-border" />
+          
         </div>
         <div className="flex gap-2">
           {[
-            { key: 'all', label: 'Hamısı' },
-            { key: 'out', label: '✕ Bitmib' },
-            { key: 'low', label: '⚠ Az stok' },
-            { key: 'ok', label: '✓ Yaxşı' },
-          ].map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilterStatus(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filterStatus === f.key ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-secondary text-muted-foreground hover:text-foreground'
-              }`}
-            >
+          { key: 'all', label: 'Hamısı' },
+          { key: 'out', label: '✕ Bitmib' },
+          { key: 'low', label: '⚠ Az stok' },
+          { key: 'ok', label: '✓ Yaxşı' }].
+          map((f) =>
+          <button
+            key={f.key}
+            onClick={() => setFilterStatus(f.key)} className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground">
+
+
+
+            
               {f.label}
             </button>
-          ))}
+          )}
         </div>
       </div>
 
@@ -220,10 +220,10 @@ export default function Inventory() {
                     </td>
                     <td className="p-4 text-center">
                       <div className="flex gap-1 justify-center">
-                        <Button size="sm" variant="outline" onClick={() => { setRestockDialog(product); setRestockAmount(10); }} className="h-7 text-xs gap-1">
+                        <Button size="sm" variant="outline" onClick={() => {setRestockDialog(product);setRestockAmount(10);}} className="h-7 text-xs gap-1">
                           <Plus className="w-3 h-3" /> Alış
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setReduceDialog(product); setReduceAmount(1); }} className="h-7 w-7 p-0 text-yellow-500 hover:bg-yellow-500/10" title="Stok azalt">
+                        <Button size="sm" variant="ghost" onClick={() => {setReduceDialog(product);setReduceAmount(1);}} className="h-7 w-7 p-0 text-yellow-500 hover:bg-yellow-500/10" title="Stok azalt">
                           <span className="text-xs font-bold">−</span>
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(product)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10">
@@ -231,22 +231,22 @@ export default function Inventory() {
                         </Button>
                       </div>
                     </td>
-                  </tr>
-                );
+                  </tr>);
+
               })}
             </tbody>
           </table>
-          {filtered.length === 0 && !isLoading && (
-            <div className="text-center py-12">
+          {filtered.length === 0 && !isLoading &&
+          <div className="text-center py-12">
               <Package className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-muted-foreground text-sm">Məhsul tapılmadı</p>
             </div>
-          )}
+          }
         </div>
       </Card>
 
       {/* Reduce Stock Dialog */}
-      <Dialog open={!!reduceDialog} onOpenChange={(v) => { if (!v) setReduceDialog(null); }}>
+      <Dialog open={!!reduceDialog} onOpenChange={(v) => {if (!v) setReduceDialog(null);}}>
         <DialogContent className="bg-card border-border max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
@@ -254,27 +254,27 @@ export default function Inventory() {
               Stok Azalt
             </DialogTitle>
           </DialogHeader>
-          {reduceDialog && (
-            <div className="space-y-4 py-2">
+          {reduceDialog &&
+          <div className="space-y-4 py-2">
               <div className="bg-secondary rounded-xl p-3">
                 <p className="font-medium text-foreground text-sm">{reduceDialog.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Mövcud stok: <span className="text-foreground font-bold">{reduceDialog.stock_quantity ?? 0}</span></p>
               </div>
               <div className="flex gap-2">
-                {[1, 5, 10, 20].map(n => (
-                  <Button key={n} size="sm" variant={reduceAmount === n ? 'default' : 'outline'} onClick={() => setReduceAmount(n)} className="text-xs flex-1">-{n}</Button>
-                ))}
+                {[1, 5, 10, 20].map((n) =>
+              <Button key={n} size="sm" variant={reduceAmount === n ? 'default' : 'outline'} onClick={() => setReduceAmount(n)} className="text-xs flex-1">-{n}</Button>
+              )}
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Azaldılacaq miqdar</Label>
-                <Input type="number" min={1} max={reduceDialog.stock_quantity ?? 0} value={reduceAmount} onChange={e => setReduceAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
+                <Input type="number" min={1} max={reduceDialog.stock_quantity ?? 0} value={reduceAmount} onChange={(e) => setReduceAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
               </div>
               <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 flex justify-between">
                 <span className="text-sm text-muted-foreground">Yeni stok</span>
                 <span className="text-sm font-bold text-yellow-500">{Math.max(0, (reduceDialog.stock_quantity ?? 0) - reduceAmount)}</span>
               </div>
             </div>
-          )}
+          }
           <DialogFooter>
             <Button variant="outline" onClick={() => setReduceDialog(null)}>Ləğv et</Button>
             <Button onClick={handleReduce} className="bg-yellow-500 hover:bg-yellow-500/90 text-white">Azalt</Button>
@@ -283,17 +283,17 @@ export default function Inventory() {
       </Dialog>
 
       {/* Delete Confirm Dialog */}
-      <Dialog open={!!deleteConfirm} onOpenChange={(v) => { if (!v) setDeleteConfirm(null); }}>
+      <Dialog open={!!deleteConfirm} onOpenChange={(v) => {if (!v) setDeleteConfirm(null);}}>
         <DialogContent className="bg-card border-border max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-foreground">Anbardan Sil</DialogTitle>
           </DialogHeader>
-          {deleteConfirm && (
-            <div className="py-2 space-y-3">
+          {deleteConfirm &&
+          <div className="py-2 space-y-3">
               <p className="text-sm text-muted-foreground">"<span className="text-foreground font-medium">{deleteConfirm.name}</span>" məhsulunu anbardan silmək istədiyinizdən əminsiniz?</p>
               <p className="text-xs text-destructive">Bu əməliyyat geri alına bilməz.</p>
             </div>
-          )}
+          }
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Ləğv et</Button>
             <Button variant="destructive" onClick={() => handleDelete(deleteConfirm)}>Sil</Button>
@@ -302,7 +302,7 @@ export default function Inventory() {
       </Dialog>
 
       {/* Restock Dialog */}
-      <Dialog open={!!restockDialog} onOpenChange={(v) => { if (!v) setRestockDialog(null); }}>
+      <Dialog open={!!restockDialog} onOpenChange={(v) => {if (!v) setRestockDialog(null);}}>
         <DialogContent className="bg-card border-border max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
@@ -310,33 +310,33 @@ export default function Inventory() {
               Alış Qeydi
             </DialogTitle>
           </DialogHeader>
-          {restockDialog && (
-            <div className="space-y-4 py-2">
+          {restockDialog &&
+          <div className="space-y-4 py-2">
               <div className="bg-secondary rounded-xl p-3">
                 <p className="font-medium text-foreground text-sm">{restockDialog.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Mövcud stok: <span className="text-foreground font-bold">{restockDialog.stock_quantity ?? 0}</span></p>
               </div>
               <div className="flex gap-2">
-                {[5, 10, 20, 50].map(n => (
-                  <Button key={n} size="sm" variant={restockAmount === n ? "default" : "outline"} onClick={() => setRestockAmount(n)} className="text-xs flex-1">+{n}</Button>
-                ))}
+                {[5, 10, 20, 50].map((n) =>
+              <Button key={n} size="sm" variant={restockAmount === n ? "default" : "outline"} onClick={() => setRestockAmount(n)} className="text-xs flex-1">+{n}</Button>
+              )}
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Alınan miqdar</Label>
-                <Input type="number" min={1} value={restockAmount} onChange={e => setRestockAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
+                <Input type="number" min={1} value={restockAmount} onChange={(e) => setRestockAmount(parseInt(e.target.value) || 0)} className="bg-secondary border-border mt-1" />
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex justify-between">
                 <span className="text-sm text-muted-foreground">Yeni stok</span>
                 <span className="text-sm font-bold text-primary">{(restockDialog.stock_quantity ?? 0) + restockAmount}</span>
               </div>
             </div>
-          )}
+          }
           <DialogFooter>
             <Button variant="outline" onClick={() => setRestockDialog(null)}>Ləğv et</Button>
             <Button onClick={handleRestock} className="bg-primary hover:bg-primary/90 text-primary-foreground">Alışı qeyd et</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>);
+
 }
