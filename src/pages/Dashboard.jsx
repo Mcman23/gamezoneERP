@@ -1,15 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, Link } from 'react-router-dom';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
-import { Monitor, Gamepad2, Clock, DollarSign, ShoppingCart, TrendingUp, Activity } from 'lucide-react';
+import { Monitor, Clock, DollarSign, ShoppingCart, TrendingUp, Activity } from 'lucide-react';
 import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 export default function Dashboard() {
   const { user } = useOutletContext();
   const { clubOwnerId } = useClub(user);
+  const queryClient = useQueryClient();
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!clubOwnerId) return;
+    const unsubs = [
+      base44.entities.Session.subscribe(() => {
+        queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
+        queryClient.invalidateQueries({ queryKey: ['completed-sessions-dash', clubOwnerId] });
+      }),
+      base44.entities.GameTable.subscribe(() => {
+        queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
+      }),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, [clubOwnerId, queryClient]);
 
   const todayInterval = useMemo(() => {
     const now = new Date();

@@ -10,13 +10,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const categoryIcons = { yemek: Coffee, icki: GlassWater, atistirmalik: Cookie, diger: Package };
 const categoryLabels = { yemek: 'Yemək', icki: 'İçki', atistirmalik: 'Atıştırmalıq', diger: 'Digər' };
 
-export default function OrderDialog({ open, onOpenChange, table, session, onConfirm }) {
+export default function OrderDialog({ open, onOpenChange, table, session, onConfirm, clubOwnerId }) {
   const [cart, setCart] = useState({});
   const [activeCategory, setActiveCategory] = useState('all');
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.list(),
+    queryKey: ['products-order', clubOwnerId],
+    queryFn: () => clubOwnerId
+      ? base44.entities.Product.filter({ club_owner_id: clubOwnerId })
+      : base44.entities.Product.list(),
+    enabled: open,
   });
 
   // Only show products that are in stock (both flag and quantity check)

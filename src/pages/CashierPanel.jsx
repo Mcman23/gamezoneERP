@@ -42,7 +42,7 @@ function exportCashierReport(data) {
 
 export default function CashierPanel() {
   const { user } = useOutletContext();
-  const { clubOwnerId } = useClub(user);
+  const { clubOwnerId, isCashier } = useClub(user);
   const todayInterval = useMemo(() => {
     const now = new Date();
     return { start: startOfDay(now), end: endOfDay(now) };
@@ -92,6 +92,21 @@ export default function CashierPanel() {
     { label: 'Aktiv', value: activeSessions.length, icon: Monitor, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
     { label: 'Sifarişlər', value: `${orderRevenue.toFixed(2)} ₼`, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
   ];
+
+  // Cashier not linked to a club
+  if (isCashier && !clubOwnerId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center">
+          <Receipt className="w-8 h-8 text-yellow-500" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Hesabınız Hələ Kluba Bağlanmayıb</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Admin sizi kluba əlavə etməlidir. Lütfən, klub sahibinizlə əlaqə saxlayın.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

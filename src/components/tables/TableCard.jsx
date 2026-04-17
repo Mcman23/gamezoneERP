@@ -17,11 +17,11 @@ const catIcons = { computer: Monitor, playstation: Gamepad2, cabinet: Gamepad2, 
 const catLabels = { computer: 'PC', playstation: 'PS', cabinet: 'Kabinet • PS', simulator: 'Simulator' };
 
 const statusConfig = {
-  available: { label: 'BOŞ', variant: 'secondary' },
-  occupied: { label: 'AKTİV', variant: 'default' },
-  locked: { label: 'KİLİDLİ', variant: 'destructive' },
-  maintenance: { label: 'BAXIM', variant: 'outline' },
-  offline: { label: 'OFFLINE', variant: 'outline' }
+  available:   { label: 'BOŞ',     color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+  occupied:    { label: 'AKTİV',   color: 'bg-primary/10 text-primary border-primary/20' },
+  locked:      { label: 'KİLİDLİ',color: 'bg-destructive/10 text-destructive border-destructive/20' },
+  maintenance: { label: 'BAXIM',  color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+  offline:     { label: 'OFFLİNE',color: 'bg-muted text-muted-foreground border-border' },
 };
 
 export default function TableCard({ table, session, onStart, onStop, onPause, onResume, onExtend, onOrder, onMove, onMerge, onRemote, isAdmin }) {
@@ -79,10 +79,13 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
               <p className="text-muted-foreground text-sm uppercase">({table.code}) {table.zone === 'cabinet' ? 'Kabinet' : 'Zal'} • {catLabels[table.category]}</p>
             </div>
           </div>
-          <Badge variant={statusConfig[table.status]?.variant || 'secondary'} className="bg-secondary text-[#e00000] px-2.5 py-0.5 font-semibold rounded-md inline-flex items-center border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80">
-            {isLocked && <Lock className="w-3 h-3 mr-1" />}
+          <span className={cn(
+            "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border",
+            statusConfig[table.status]?.color || 'bg-muted text-muted-foreground border-border'
+          )}>
+            {isLocked && <Lock className="w-3 h-3" />}
             {statusConfig[table.status]?.label || table.status}
-          </Badge>
+          </span>
         </div>
 
         {/* Timer */}

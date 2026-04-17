@@ -21,10 +21,18 @@ export default function AppLayout() {
     base44.auth.me().then(setUser);
   }, []);
 
-  // Redirect owner to /owner panel, away from admin pages
+  // Redirect owner to /owner panel
   useEffect(() => {
     if (user?.role === 'owner' && location.pathname !== '/owner') {
       navigate('/owner', { replace: true });
+    }
+  }, [user, location.pathname]);
+
+  // Redirect cashiers away from admin-only pages
+  const CASHIER_ALLOWED = ['/tables', '/cashier'];
+  useEffect(() => {
+    if (user?.role === 'user' && !CASHIER_ALLOWED.includes(location.pathname)) {
+      navigate('/tables', { replace: true });
     }
   }, [user, location.pathname]);
 

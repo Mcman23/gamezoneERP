@@ -2,27 +2,30 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { roundCost, calcUnlimitedCost } from '@/lib/tableConfig';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getBillingElapsedMinutes(session) {
-  // For unlimited sessions: raw elapsed minus all paused time
   const totalMs = new Date() - new Date(session.start_time);
   const pausedMs = (session.total_paused_minutes || 0) * 60000;
-  // If currently paused, also subtract current pause duration
-  const currentPauseMs = (session.status === 'paused' && session.pause_start)
-    ? new Date() - new Date(session.pause_start)
-    : 0;
+  const currentPauseMs =
+    session.status === 'paused' && session.pause_start
+      ? new Date() - new Date(session.pause_start)
+      : 0;
   return Math.max(0, Math.floor((totalMs - pausedMs - currentPauseMs) / 60000));
 }
+
+// ─── Main hook ────────────────────────────────────────────────────────────────
 
 export function useTableActions(queryClient, sessionMap, clubOwnerId) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions-notify', clubOwnerId] });
-    // Also invalidate without key suffix for safety
-    queryClient.invalidateQueries({ queryKey: ['tables'] });
-    queryClient.invalidateQueries({ queryKey: ['active-sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['cashier-sessions', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['cashier-orders', clubOwnerId] });
   };
 
+  // ── Customer upsert ─────────────────────────────────────────────────────────
   const upsertCustomer = async (phone, name, totalCost) => {
     if (!phone) return;
     try {
@@ -37,44 +40,74 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
         });
       } else {
         await base44.entities.Customer.create({
-          phone, name: name || '', total_sessions: 1,
-          total_spent: totalCost, last_visit: new Date().toISOString(),
+          phone,
+          name: name || '',
+          total_sessions: 1,
+          total_spent: totalCost,
+          last_visit: new Date().toISOString(),
           club_owner_id: clubOwnerId,
         });
       }
-    } catch {}
+    } catch (_) {
+      // Non-critical — don't block payment flow
+    }
   };
 
+  // ── Start session ────────────────────────────────────────────────────────────
   const startSession = async (table, durationMinutes, hourlyRateOverride = null, customerPhone = null, customerName = null) => {
-    if (['locked', 'offline', 'maintenance', 'occupied'].includes(table.status)) {
-      toast.error('Bu masa sessiya üçün uygun deyil');
+    // Guard: must be available
+    if (table.status !== 'available') {
+      toast.error('Bu masa hal-hazırda mövcud deyil (dolu, kilidli və ya texniki baxım)');
       return;
     }
+
+    // Double-booking guard: check for any active/paused session on this table
+    const existingSession = sessionMap[table.id];
+    if (existingSession) {
+      toast.error(`${table.name} üçün artıq aktiv sessiya mövcuddur`);
+      return;
+    }
+
     const now = new Date();
     const isUnlimited = durationMinutes === null;
     const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
     const rate = hourlyRateOverride ?? table.hourly_rate;
     const sessionCost = isUnlimited ? 0 : roundCost((durationMinutes / 60) * rate);
 
+    // Atomic: create session first, then update table
     const session = await base44.entities.Session.create({
-      table_id: table.id, table_name: table.name, table_category: table.category,
+      table_id: table.id,
+      table_name: table.name,
+      table_category: table.category,
       start_time: now.toISOString(),
       end_time: isUnlimited ? null : endTime.toISOString(),
       duration_minutes: isUnlimited ? 0 : durationMinutes,
       hourly_rate: rate,
-      session_cost: sessionCost, orders_cost: 0, total_cost: sessionCost,
-      status: 'active', paid: false, is_unlimited: isUnlimited,
+      session_cost: sessionCost,
+      orders_cost: 0,
+      total_cost: sessionCost,
+      status: 'active',
+      paid: false,
+      is_unlimited: isUnlimited,
       club_owner_id: clubOwnerId,
       ...(customerPhone ? { customer_phone: customerPhone, customer_name: customerName || '' } : {}),
     });
 
-    await base44.entities.GameTable.update(table.id, { status: 'occupied', current_session_id: session.id });
+    await base44.entities.GameTable.update(table.id, {
+      status: 'occupied',
+      current_session_id: session.id,
+    });
+
     invalidate();
     toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəq'}`);
   };
 
+  // ── Pause session ────────────────────────────────────────────────────────────
   const pauseSession = async (table, session) => {
-    if (session.status !== 'active') return;
+    if (session.status !== 'active') {
+      toast.error('Yalnız aktiv sessiya dayandırıla bilər');
+      return;
+    }
     await base44.entities.Session.update(session.id, {
       status: 'paused',
       pause_start: new Date().toISOString(),
@@ -83,15 +116,19 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     toast.success(`${table.name} fasilə verildi`);
   };
 
+  // ── Resume session ───────────────────────────────────────────────────────────
   const resumeSession = async (table, session) => {
-    if (session.status !== 'paused' || !session.pause_start) return;
+    if (session.status !== 'paused' || !session.pause_start) {
+      toast.error('Yalnız dayandırılmış sessiya davam etdirilə bilər');
+      return;
+    }
     const pausedMs = new Date() - new Date(session.pause_start);
     const pausedMinutes = Math.floor(pausedMs / 60000);
     const newTotalPaused = (session.total_paused_minutes || 0) + pausedMinutes;
-    // Push end_time forward by the pause duration (for non-unlimited sessions)
     const newEndTime = session.end_time
       ? new Date(new Date(session.end_time).getTime() + pausedMs).toISOString()
       : null;
+
     await base44.entities.Session.update(session.id, {
       status: 'active',
       pause_start: null,
@@ -102,95 +139,197 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     toast.success(`${table.name} davam etdirildi`);
   };
 
+  // ── Stop session ─────────────────────────────────────────────────────────────
   const stopSession = async (table, session, paymentMethod = 'cash', billingMinutes = null, amountPaid = null) => {
+    if (!session) {
+      toast.error('Sessiya tapılmadı');
+      return;
+    }
+
     const isUnlimited = session.is_unlimited;
-    const actualBilling = billingMinutes ?? (isUnlimited ? getBillingElapsedMinutes(session) : null);
-    const actualCost = isUnlimited ? calcUnlimitedCost(actualBilling, session.hourly_rate) : (session.session_cost || 0);
+    const actualBilling =
+      billingMinutes ?? (isUnlimited ? getBillingElapsedMinutes(session) : null);
+    const actualCost = isUnlimited
+      ? calcUnlimitedCost(actualBilling, session.hourly_rate)
+      : session.session_cost || 0;
     const totalCost = roundCost(actualCost + (session.orders_cost || 0));
 
+    // Atomic: update session → free table
     await base44.entities.Session.update(session.id, {
       status: 'completed',
-      duration_minutes: isUnlimited ? (actualBilling || 0) : session.duration_minutes,
-      session_cost: actualCost, total_cost: totalCost,
-      paid: true, payment_method: paymentMethod,
+      end_time: new Date().toISOString(),
+      duration_minutes: isUnlimited ? actualBilling || 0 : session.duration_minutes,
+      session_cost: actualCost,
+      total_cost: totalCost,
+      paid: true,
+      payment_method: paymentMethod,
       pause_start: null,
     });
-    await base44.entities.GameTable.update(table.id, { status: 'available', current_session_id: '' });
-    // Auto-upsert customer record
-    await upsertCustomer(session.customer_phone, session.customer_name, totalCost);
+
+    await base44.entities.GameTable.update(table.id, {
+      status: 'available',
+      current_session_id: '',
+    });
+
+    // Non-blocking customer upsert
+    upsertCustomer(session.customer_phone, session.customer_name, totalCost);
+
     invalidate();
-    const change = amountPaid && amountPaid > totalCost ? ` | Qaytarılacaq: ${roundCost(amountPaid - totalCost)} ₼` : '';
+    const change =
+      amountPaid && amountPaid > totalCost
+        ? ` | Qaytarılacaq: ${roundCost(amountPaid - totalCost)} ₼`
+        : '';
     toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼${change}`);
   };
 
+  // ── Extend session ───────────────────────────────────────────────────────────
   const extendSession = async (table, session, extraMinutes) => {
+    if (!session || session.is_unlimited) {
+      toast.error('Limitsiz sessiya uzadıla bilməz');
+      return;
+    }
     const newEnd = new Date(new Date(session.end_time).getTime() + extraMinutes * 60000);
     const extraCost = roundCost((extraMinutes / 60) * table.hourly_rate);
     const newSessionCost = roundCost((session.session_cost || 0) + extraCost);
     const newDuration = (session.duration_minutes || 0) + extraMinutes;
 
     await base44.entities.Session.update(session.id, {
-      end_time: newEnd.toISOString(), duration_minutes: newDuration,
-      session_cost: newSessionCost, total_cost: roundCost(newSessionCost + (session.orders_cost || 0)),
+      end_time: newEnd.toISOString(),
+      duration_minutes: newDuration,
+      session_cost: newSessionCost,
+      total_cost: roundCost(newSessionCost + (session.orders_cost || 0)),
     });
     invalidate();
     toast.success(`${table.name} +${extraMinutes} dəq uzadıldı`);
   };
 
+  // ── Add order ────────────────────────────────────────────────────────────────
   const addOrder = async (table, session, items, totalAmount) => {
+    if (!session) {
+      toast.error('Aktiv sessiya tapılmadı');
+      return;
+    }
+
+    // Create order record
     await base44.entities.Order.create({
-      session_id: session.id, table_id: table.id, table_name: table.name,
-      items, total_amount: totalAmount, status: 'delivered',
+      session_id: session.id,
+      table_id: table.id,
+      table_name: table.name,
+      items,
+      total_amount: totalAmount,
+      status: 'pending',
       club_owner_id: clubOwnerId,
     });
+
+    // Update session totals
     const newOrdersCost = roundCost((session.orders_cost || 0) + totalAmount);
     await base44.entities.Session.update(session.id, {
-      orders_cost: newOrdersCost, total_cost: roundCost((session.session_cost || 0) + newOrdersCost),
+      orders_cost: newOrdersCost,
+      total_cost: roundCost((session.session_cost || 0) + newOrdersCost),
     });
-    // Deduct stock and check low-stock alerts
-    await Promise.all(items.map(async (item) => {
-      const products = await base44.entities.Product.filter({ id: item.product_id });
-      if (products.length > 0) {
-        const p = products[0];
-        const newQty = Math.max(0, (p.stock_quantity ?? 0) - item.quantity);
-        await base44.entities.Product.update(p.id, { stock_quantity: newQty, in_stock: newQty > 0 });
-        // Warn if critically low
-        const threshold = p.low_stock_threshold ?? 5;
-        if (newQty === 0) {
-          toast.error(`⚠️ ${p.name} stokda bitti!`, { duration: 5000 });
-        } else if (newQty <= threshold) {
-          toast.warning(`⚠️ ${p.name} az qaldı — ${newQty} ədəd`, { duration: 5000 });
+
+    // Deduct stock and fire low-stock warnings
+    await Promise.all(
+      items.map(async (item) => {
+        try {
+          const [product] = await base44.entities.Product.filter({ id: item.product_id });
+          if (!product) return;
+          const newQty = Math.max(0, (product.stock_quantity ?? 0) - item.quantity);
+          await base44.entities.Product.update(product.id, {
+            stock_quantity: newQty,
+            in_stock: newQty > 0,
+          });
+          const threshold = product.low_stock_threshold ?? 5;
+          if (newQty === 0) {
+            toast.error(`⚠️ ${product.name} stokda bitti!`, { duration: 6000 });
+          } else if (newQty <= threshold) {
+            toast.warning(`⚠️ ${product.name} az qaldı — ${newQty} ədəd`, { duration: 5000 });
+          }
+        } catch (_) {
+          // Don't block order flow on stock error
         }
-      }
-    }));
+      })
+    );
+
     invalidate();
-    queryClient.invalidateQueries({ queryKey: ['cashier-orders', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['products-stock', clubOwnerId] });
     toast.success(`${table.name} sifarişi — ${totalAmount.toFixed(2)} ₼`);
   };
 
+  // ── Move session ─────────────────────────────────────────────────────────────
   const moveSession = async (sourceTable, targetTable) => {
     const session = sessionMap[sourceTable.id];
-    if (!session) return;
-    await base44.entities.Session.update(session.id, { table_id: targetTable.id, table_name: targetTable.name });
-    await base44.entities.GameTable.update(sourceTable.id, { status: 'available', current_session_id: '' });
-    await base44.entities.GameTable.update(targetTable.id, { status: 'occupied', current_session_id: session.id });
+    if (!session) {
+      toast.error('Köçürüləcək sessiya tapılmadı');
+      return;
+    }
+    if (targetTable.status !== 'available') {
+      toast.error(`${targetTable.name} boş deyil`);
+      return;
+    }
+
+    await base44.entities.Session.update(session.id, {
+      table_id: targetTable.id,
+      table_name: targetTable.name,
+    });
+    await base44.entities.GameTable.update(sourceTable.id, {
+      status: 'available',
+      current_session_id: '',
+    });
+    await base44.entities.GameTable.update(targetTable.id, {
+      status: 'occupied',
+      current_session_id: session.id,
+    });
+
     invalidate();
     toast.success(`${sourceTable.name} → ${targetTable.name} köçürüldü`);
   };
 
+  // ── Merge session ─────────────────────────────────────────────────────────────
   const mergeSession = async (sourceTable, targetTable, targetSession) => {
     const sourceSession = sessionMap[sourceTable.id];
-    if (!sourceSession) return;
-    const mergedOrders = roundCost((targetSession.orders_cost || 0) + (sourceSession.orders_cost || 0));
-    const mergedSession = roundCost((targetSession.session_cost || 0) + (sourceSession.session_cost || 0));
-    await base44.entities.Session.update(targetSession.id, {
-      orders_cost: mergedOrders, session_cost: mergedSession, total_cost: roundCost(mergedOrders + mergedSession),
-    });
-    await base44.entities.Session.update(sourceSession.id, { status: 'completed', paid: true });
-    await base44.entities.GameTable.update(sourceTable.id, { status: 'available', current_session_id: '' });
+    if (!sourceSession) {
+      toast.error('Birləşdiriləcək sessiya tapılmadı');
+      return;
+    }
+
+    const mergedOrders = roundCost(
+      (targetSession.orders_cost || 0) + (sourceSession.orders_cost || 0)
+    );
+    const mergedSession = roundCost(
+      (targetSession.session_cost || 0) + (sourceSession.session_cost || 0)
+    );
+
+    // Atomic: update target, close source, free source table
+    await Promise.all([
+      base44.entities.Session.update(targetSession.id, {
+        orders_cost: mergedOrders,
+        session_cost: mergedSession,
+        total_cost: roundCost(mergedOrders + mergedSession),
+      }),
+      base44.entities.Session.update(sourceSession.id, {
+        status: 'completed',
+        paid: true,
+        end_time: new Date().toISOString(),
+      }),
+      base44.entities.GameTable.update(sourceTable.id, {
+        status: 'available',
+        current_session_id: '',
+      }),
+    ]);
+
     invalidate();
     toast.success(`${sourceTable.name} → ${targetTable.name} birləşdirildi`);
   };
 
-  return { startSession, stopSession, pauseSession, resumeSession, extendSession, addOrder, moveSession, mergeSession };
+  return {
+    startSession,
+    stopSession,
+    pauseSession,
+    resumeSession,
+    extendSession,
+    addOrder,
+    moveSession,
+    mergeSession,
+  };
 }

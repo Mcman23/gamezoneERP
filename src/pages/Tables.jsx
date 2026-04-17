@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
-import { Monitor, Gamepad2, Tv2, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Monitor, Gamepad2, Tv2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { CATEGORY_LABELS } from '@/lib/tableConfig';
 import TableCard from '@/components/tables/TableCard';
 import StartSessionDialog from '@/components/tables/StartSessionDialog';
@@ -36,6 +35,18 @@ export default function Tables() {
     queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
     queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
   };
+
+  // Real-time subscriptions for instant UI updates
+  useEffect(() => {
+    if (!clubOwnerId) return;
+    const unsubTable = base44.entities.GameTable.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
+    });
+    const unsubSession = base44.entities.Session.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
+    });
+    return () => { unsubTable(); unsubSession(); };
+  }, [clubOwnerId, queryClient]);
 
   const { data: tables = [], isLoading } = useQuery({
     queryKey: ['tables', clubOwnerId],
@@ -96,8 +107,15 @@ export default function Tables() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Masalar</h1>
-          <p className="text-sm text-muted-foreground mt-1">{occupied} dolu / {tables.length} ümumi</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            <span className="text-primary font-semibold">{occupied}</span> dolu /
+            <span className="ml-1">{tables.length} ümumi</span>
+            <span className="ml-2 text-green-500 font-medium">{tables.length - occupied} boş</span>
+          </p>
         </div>
+        <Button variant="outline" size="sm" onClick={refetchAll} className="gap-2">
+          <RefreshCw className="w-3.5 h-3.5" /> Yenilə
+        </Button>
       </div>
 
       {grouped.map(([category, items]) => {
@@ -133,7 +151,7 @@ export default function Tables() {
       <StartSessionDialog open={startDialog.open} onOpenChange={(v) => setStartDialog((s) => ({ ...s, open: v }))} table={startDialog.table} onConfirm={actions.startSession} />
       <StopSessionDialog open={stopDialog.open} onOpenChange={(v) => setStopDialog((s) => ({ ...s, open: v }))} table={stopDialog.table} session={stopDialog.session} onConfirm={actions.stopSession} />
       <ExtendSessionDialog open={extendDialog.open} onOpenChange={(v) => setExtendDialog((s) => ({ ...s, open: v }))} table={extendDialog.table} session={extendDialog.session} onConfirm={actions.extendSession} />
-      <OrderDialog open={orderDialog.open} onOpenChange={(v) => setOrderDialog((s) => ({ ...s, open: v }))} table={orderDialog.table} session={orderDialog.session} onConfirm={actions.addOrder} />
+      <OrderDialog open={orderDialog.open} onOpenChange={(v) => setOrderDialog((s) => ({ ...s, open: v }))} table={orderDialog.table} session={orderDialog.session} onConfirm={actions.addOrder} clubOwnerId={clubOwnerId} />
       <MoveTableDialog open={moveDialog.open} onOpenChange={(v) => setMoveDialog((s) => ({ ...s, open: v }))} sourceTable={moveDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target) => actions.moveSession(moveDialog.table, target)} />
       <MergeTableDialog open={mergeDialog.open} onOpenChange={(v) => setMergeDialog((s) => ({ ...s, open: v }))} sourceTable={mergeDialog.table} tables={tables} sessionMap={sessionMap} onConfirm={(target, targetSession) => actions.mergeSession(mergeDialog.table, target, targetSession)} />
       <RemoteControlDialog open={remoteDialog.open} onOpenChange={(v) => setRemoteDialog((s) => ({ ...s, open: v }))} table={remoteDialog.table} isAdmin={user?.role === 'admin'} />
