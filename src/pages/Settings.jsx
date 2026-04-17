@@ -78,13 +78,21 @@ export default function Settings() {
   };
 
   const linkCashier = async (cashierUser) => {
-    await base44.entities.User.update(cashierUser.id, { club_owner_id: clubOwnerId });
+    await base44.functions.invoke('updateUserRole', {
+      target_user_id: cashierUser.id,
+      role: 'user',
+      club_owner_id: clubOwnerId,
+    });
     queryClient.invalidateQueries({ queryKey: ['all-users'] });
     toast.success(`${cashierUser.full_name} kluba əlavə edildi`);
   };
 
   const unlinkCashier = async (cashierUser) => {
-    await base44.entities.User.update(cashierUser.id, { club_owner_id: '' });
+    await base44.functions.invoke('updateUserRole', {
+      target_user_id: cashierUser.id,
+      role: 'user',
+      club_owner_id: '',
+    });
     queryClient.invalidateQueries({ queryKey: ['all-users'] });
     toast.success(`${cashierUser.full_name} klubdan çıxarıldı`);
   };
