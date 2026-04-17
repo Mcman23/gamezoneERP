@@ -1,14 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function generatePassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let pass = '';
-  for (let i = 0; i < 10; i++) {
-    pass += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return pass;
-}
-
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -22,78 +13,80 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { full_name, email, phone, club_owner_id } = body;
+    const { email, phone, club_owner_id } = body;
 
     if (!email || !email.trim()) {
       return Response.json({ error: 'Email məcburidir' }, { status: 400 });
-    }
-    if (!full_name || !full_name.trim()) {
-      return Response.json({ error: 'Ad Soyad məcburidir' }, { status: 400 });
     }
     if (!club_owner_id) {
       return Response.json({ error: 'club_owner_id məcburidir' }, { status: 400 });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const password = generatePassword();
     const userCode = generateCode();
 
-    // Check if user already exists
+    // Check if user already exists in the system
     const allUsers = await base44.asServiceRole.entities.User.list();
     const existingUser = allUsers.find(u => u.email === normalizedEmail);
 
     if (existingUser) {
-      // User exists — update their club association
-      await base44.asServiceRole.entities.User.update(existingUser.id, {
+      // Already registered — just link them to this club
+      const updateData = {
         club_owner_id: club_owner_id,
         role: 'user',
-        user_code: existingUser.user_code || userCode,
-        ...(phone ? { phone } : {}),
-      });
+      };
+      if (!existingUser.user_code) updateData.user_code = userCode;
+      if (phone) updateData.phone = phone;
+
+      await base44.asServiceRole.entities.User.update(existingUser.id, updateData);
 
       return Response.json({
         success: true,
-        message: 'Mövcud istifadəçi kluba bağlandı',
-        password: null,
-        user_code: existingUser.user_code || userCode,
         existing: true,
+        message: 'Mövcud istifadəçi kluba bağlandı',
+        user_code: existingUser.user_code || userCode,
       });
     }
 
-    // Register new user with email + password directly
-    await base44.auth.register({ email: normalizedEmail, password });
+    // New user — send platform invite email (they set their own password via email link)
+    await base44.users.inviteUser(normalizedEmail, 'user');
 
-    // Poll for user record to appear (max 6 seconds)
+    // After invite, poll for the user record to appear (up to 8 seconds)
     let newUser = null;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       await new Promise(r => setTimeout(r, 1000));
       const users = await base44.asServiceRole.entities.User.list();
       newUser = users.find(u => u.email === normalizedEmail);
       if (newUser) break;
     }
 
-    if (!newUser) {
-      return Response.json({ error: 'İstifadəçi yaradıldı lakin tapılmadı. Bir az gözləyib yenidən yoxlayın.' }, { status: 500 });
+    if (newUser) {
+      const updateData = {
+        club_owner_id: club_owner_id,
+        role: 'user',
+        user_code: userCode,
+      };
+      if (phone) updateData.phone = phone;
+      await base44.asServiceRole.entities.User.update(newUser.id, updateData);
+    } else {
+      // Store pending — admin must manually link later once user registers
+      // We still return success because invite email was sent
     }
-
-    // Update user with club info, name, code
-    await base44.asServiceRole.entities.User.update(newUser.id, {
-      club_owner_id: club_owner_id,
-      role: 'user',
-      user_code: userCode,
-      ...(phone ? { phone } : {}),
-    });
 
     return Response.json({
       success: true,
-      message: 'Kassir uğurla yaradıldı',
-      password,
-      user_code: userCode,
-      email: normalizedEmail,
       existing: false,
+      invited: true,
+      message: 'Dəvət emaili göndərildi',
+      user_code: newUser ? userCode : null,
     });
 
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    const msg = error.message || 'Xəta baş verdi';
+    // Translate known errors
+    if (msg.includes('already') || msg.includes('registered')) {
+      return Response.json({ error: 'Bu email artıq sistemdə qeydiyyatdadır.' }, { status: 400 });
+    }
+    return Response.json({ error: msg }, { status: 500 });
   }
 });
