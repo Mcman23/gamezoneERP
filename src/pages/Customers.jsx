@@ -1,17 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, Phone, Clock, DollarSign, Calendar } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Users, Search, Phone, Clock, DollarSign, Calendar, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 export default function Customers() {
   const { user } = useOutletContext();
   const { clubOwnerId } = useClub(user);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '' });
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers', clubOwnerId],
@@ -30,6 +37,20 @@ export default function Customers() {
   const totalRevenue = customers.reduce((a, c) => a + (c.total_spent || 0), 0);
   const totalSessions = customers.reduce((a, c) => a + (c.total_sessions || 0), 0);
 
+  const handleSave = async () => {
+    await base44.entities.Customer.create({
+      name: form.name,
+      phone: form.phone,
+      total_sessions: 0,
+      total_spent: 0,
+      club_owner_id: clubOwnerId,
+    });
+    queryClient.invalidateQueries({ queryKey: ['customers', clubOwnerId] });
+    setDialogOpen(false);
+    setForm({ name: '', phone: '' });
+    toast.success('Müştəri əlavə edildi');
+  };
+
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -41,8 +62,11 @@ export default function Customers() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Müştərilər</h1>
-          <p className="text-sm text-muted-foreground mt-1">Avtomatik toplanmış müştəri bazası</p>
+          <p className="text-sm text-muted-foreground mt-1">Müştəri bazası və əl ilə əlavə etmə</p>
         </div>
+        <Button onClick={() => setDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Plus className="w-4 h-4 mr-1.5" /> Müştəri əlavə et
+        </Button>
       </div>
 
       {/* Stats */}
@@ -132,6 +156,28 @@ export default function Customers() {
           ))}
         </div>
       )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Yeni Müştəri</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Ad</Label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="Ad Soyad" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Telefon *</Label>
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="bg-secondary border-border mt-1" placeholder="050..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Ləğv et</Button>
+            <Button onClick={handleSave} disabled={!form.phone} className="bg-primary hover:bg-primary/90 text-primary-foreground">Əlavə et</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import AdminPanel from './pages/AdminPanel';
 import DataImport from './pages/DataImport';
 import OwnerPanel from './pages/OwnerPanel';
 import Customers from './pages/Customers';
+import Reservations from './pages/Reservations';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/import" element={<DataImport />} />
         <Route path="/owner" element={<OwnerPanel />} />
         <Route path="/customers" element={<Customers />} />
+        <Route path="/reservations" element={<Reservations />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
