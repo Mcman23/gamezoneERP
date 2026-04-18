@@ -29,6 +29,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
   const resetForm = () => setForm({ email: '', phone: '', password: '' });
 
   const handleInvite = async () => {
+    if (loading) return;
     if (!form.email.trim()) { toast.error('Email məcburidir'); return; }
     if (!form.password.trim() || form.password.trim().length < 6) { toast.error('Şifrə minimum 6 simvol olmalıdır'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
@@ -54,10 +55,11 @@ export default function CashierManagement({ user, clubOwnerId }) {
         toast.success('Kassir yaradıldı və kluba əlavə edildi');
       }
     } catch (e) {
-      let msg = e?.response?.data?.error || e.message || 'Xəta baş verdi';
+      const msg = e?.response?.data?.error || e.message || 'Xəta baş verdi';
       toast.error(msg);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleLink = async (cashierUser) => {
@@ -202,7 +204,9 @@ export default function CashierManagement({ user, clubOwnerId }) {
               Sistemdə artıq mövcud olan istifadəçini kassir kimi kluba bağlayın və onun giriş şifrəsini burada qeyd edin.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2" onKeyDown={(e) => e.key === 'Enter' && handleInvite()}>
+          <div className="space-y-3 py-2" onKeyDown={(e) => {
+            if (e.key === 'Enter' && !loading) handleInvite();
+          }}>
             <div>
               <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                 <Mail className="w-3 h-3" /> Email <span className="text-destructive">*</span>
