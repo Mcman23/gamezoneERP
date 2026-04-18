@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Crown, Users, CalendarDays, Activity } from 'lucide-react';
+import { Monitor, Gamepad2, Coffee, BarChart3, Settings, LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Warehouse, ShieldAlert, Receipt, DollarSign, Crown, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,7 @@ const navItems = [
   { path: '/inventory', label: 'Anbar',             icon: Warehouse,      roles: ['admin'] },
   { path: '/expenses',  label: 'Xərclər',           icon: DollarSign,     roles: ['admin'] },
   { path: '/reports',   label: 'Hesabatlar',        icon: BarChart3,      roles: ['admin'] },
-  { path: '/customers', label: 'Müştərilər',        icon: Users,          roles: ['admin', 'user'] },
-  { path: '/reservations', label: 'Rezervasiya',    icon: CalendarDays,   roles: ['admin', 'user'] },
-  { path: '/live',      label: 'Canlı Dashboard',   icon: Activity,       roles: ['admin'] },
+  { path: '/customers', label: 'Müştərilər',        icon: Users,          roles: ['admin'] },
   { path: '/settings',  label: 'Tənzimləmələr',     icon: Settings,       roles: ['admin'] },
   { path: '/admin',     label: 'Sistem Paneli',     icon: ShieldAlert,    roles: ['admin'] },
 ];
