@@ -32,5 +32,51 @@
   },
   "required": [
     "phone"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
 }
