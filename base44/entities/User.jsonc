@@ -10,23 +10,27 @@
         "user"
       ],
       "default": "user",
-      "description": "\u0130stifad\u0259\u00e7i rolu: owner (sistem sahibi), admin (klub sahibi), user (kassir)"
+      "description": "\u0130stifad\u0259\u00e7i rolu: owner, admin, user"
     },
     "club_owner_id": {
       "type": "string",
-      "description": "Kassirin \u0259laq\u0259li oldu\u011fu admin (klub sahibi) ID-si"
+      "description": "Kassirin ba\u011fl\u0131 oldu\u011fu klub sahibi ID-si"
     },
     "club_name": {
       "type": "string",
-      "description": "Klub ad\u0131 (yaln\u0131z admin \u00fc\u00e7\u00fcn)"
+      "description": "Klub ad\u0131"
     },
     "user_code": {
       "type": "string",
-      "description": "Unikal istifad\u0259\u00e7i kodu (4-6 r\u0259q\u0259m)"
+      "description": "Unikal istifad\u0259\u00e7i kodu"
     },
     "phone": {
       "type": "string",
-      "description": "\u018flaq\u0259 n\u00f6mr\u0259si"
+      "description": "Telefon n\u00f6mr\u0259si"
+    },
+    "temp_password": {
+      "type": "string",
+      "description": "Admin t\u0259r\u0259find\u0259n yarad\u0131lm\u0131\u015f ilkin \u015fifr\u0259"
     }
   },
   "required": []
