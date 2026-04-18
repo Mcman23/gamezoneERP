@@ -68,7 +68,7 @@ export default function Inventory() {
   const stats = useMemo(() => {
     const total = products.length;
     const out = products.filter((p) => (p.stock_quantity ?? 0) === 0).length;
-    const low = products.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 5);}).length;
+    const low = products.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 3);}).length;
     const totalValue = products.reduce((acc, p) => acc + (p.purchase_price || p.price || 0) * (p.stock_quantity ?? 0), 0);
     return { total, out, low, totalValue };
   }, [products]);
@@ -76,8 +76,8 @@ export default function Inventory() {
   const filtered = useMemo(() => {
     let list = products;
     if (filterStatus === 'out') list = list.filter((p) => (p.stock_quantity ?? 0) === 0);else
-    if (filterStatus === 'low') list = list.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 5);});else
-    if (filterStatus === 'ok') list = list.filter((p) => (p.stock_quantity ?? 0) > (p.low_stock_threshold ?? 5));
+    if (filterStatus === 'low') list = list.filter((p) => {const q = p.stock_quantity ?? 0;return q > 0 && q <= (p.low_stock_threshold ?? 3);});else
+    if (filterStatus === 'ok') list = list.filter((p) => (p.stock_quantity ?? 0) > (p.low_stock_threshold ?? 3));
     if (searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q));
@@ -88,7 +88,7 @@ export default function Inventory() {
   const getStockStatus = (p) => {
     const qty = p.stock_quantity ?? 0;
     if (qty === 0) return { label: 'Bitmib', color: 'text-destructive', bg: 'bg-destructive/10 border-destructive/30' };
-    if (qty <= (p.low_stock_threshold ?? 5)) return { label: 'Az stok', color: 'text-yellow-500', bg: 'bg-yellow-500/10 border-yellow-500/30' };
+    if (qty <= (p.low_stock_threshold ?? 3)) return { label: 'Az stok', color: 'text-yellow-500', bg: 'bg-yellow-500/10 border-yellow-500/30' };
     return { label: 'Yaxşı', color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/30' };
   };
 
@@ -208,7 +208,7 @@ export default function Inventory() {
                     <td className="p-4 text-center">
                       <span className={`text-lg font-bold ${status.color}`}>{product.stock_quantity ?? 0}</span>
                     </td>
-                    <td className="p-4 text-center text-sm text-muted-foreground">{product.low_stock_threshold ?? 5}</td>
+                    <td className="p-4 text-center text-sm text-muted-foreground">{product.low_stock_threshold ?? 3}</td>
                     <td className="p-4 text-center text-sm text-muted-foreground">
                       {product.purchase_price ? `${product.purchase_price.toFixed(2)} ₼` : '—'}
                     </td>

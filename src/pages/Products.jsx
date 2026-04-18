@@ -20,7 +20,7 @@ const categoryIcons = { yemek: Coffee, icki: GlassWater, atistirmalik: Cookie, d
 
 const defaultForm = {
   name: '', category: 'yemek', price: '', purchase_price: '',
-  in_stock: true, stock_quantity: 0, low_stock_threshold: 5,
+  in_stock: true, stock_quantity: 0, low_stock_threshold: 3,
 };
 
 function calcMargin(salePrice, purchasePrice) {
@@ -56,7 +56,7 @@ export default function Products() {
       purchase_price: product.purchase_price?.toString() || '',
       in_stock: product.in_stock !== false,
       stock_quantity: product.stock_quantity ?? 0,
-      low_stock_threshold: product.low_stock_threshold ?? 5,
+      low_stock_threshold: product.low_stock_threshold ?? 3,
     });
     setEditing(product);
     setDialogOpen(true);
@@ -68,7 +68,7 @@ export default function Products() {
       price: parseFloat(form.price),
       purchase_price: form.purchase_price ? parseFloat(form.purchase_price) : null,
       stock_quantity: parseInt(form.stock_quantity) || 0,
-      low_stock_threshold: parseInt(form.low_stock_threshold) || 5,
+      low_stock_threshold: parseInt(form.low_stock_threshold) || 3,
     };
     if (editing) {
       await base44.entities.Product.update(editing.id, data);
@@ -105,7 +105,7 @@ export default function Products() {
   const outOfStock = products.filter(p => (p.stock_quantity ?? 0) === 0 && p.in_stock !== false);
   const lowStock = products.filter(p => {
     const qty = p.stock_quantity ?? 0;
-    const threshold = p.low_stock_threshold ?? 5;
+    const threshold = p.low_stock_threshold ?? 3;
     return qty > 0 && qty <= threshold;
   });
 

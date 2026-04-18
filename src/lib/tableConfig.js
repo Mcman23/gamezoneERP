@@ -1,6 +1,6 @@
 // PlayStation pricing matrix
 export const PS_PRICING = {
-  ps3: { cabinet: 3, hall: 1.5 },
+  ps3: { cabinet: 1.5, hall: 1.5 },
   ps4: { cabinet: 3, hall: 3 },
   ps5: { cabinet: 5, hall: 5 },
 };
@@ -34,7 +34,7 @@ export const DEFAULT_TABLES = [
   // 7 Computers
   ...Array.from({ length: 7 }, (_, i) => ({
     name: `Gamezone ${i + 1}`, code: `PC${i + 1}`, category: 'computer',
-    zone: 'hall', ps_model: 'none', hourly_rate: 2, order_number: i + 1,
+    zone: 'hall', ps_model: 'none', hourly_rate: 1.8, order_number: i + 1,
   })),
   // 2 PS Cabinet
   ...Array.from({ length: 2 }, (_, i) => ({
