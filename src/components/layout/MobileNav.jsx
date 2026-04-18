@@ -11,7 +11,7 @@ const navItems = [
   { path: '/products', label: 'Məhsul', icon: Coffee, roles: ['admin'] },
   { path: '/customers', label: 'Müştəri', icon: Users, roles: ['admin', 'user'] },
   { path: '/reservations', label: 'Rezerv', icon: CalendarDays, roles: ['admin', 'user'] },
-  { path: '/live', label: 'Canlı', icon: Activity, roles: ['admin'] },
+  { path: '/live', label: 'Canlı', icon: Activity, roles: ['admin', 'user'] },
   { path: '/reports', label: 'Hesabat', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzim', icon: Settings, roles: ['admin'] },
 ];

@@ -1,20 +1,40 @@
 {
-  "name": "Club Management",
-  "short_name": "ClubApp",
+  "name": "Playroom — Oyun Klubu",
+  "short_name": "Playroom",
+  "description": "Oyun Klubu İdarəetmə Sistemi",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#2563eb",
+  "background_color": "#0a0d1a",
+  "theme_color": "#0a0d1a",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "https://base44.com/logo_v2.svg",
+      "src": "/icon-192.svg",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://base44.com/logo_v2.svg",
+      "src": "/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Masalar",
+      "short_name": "Masalar",
+      "description": "Masa idarəetməsinə keç",
+      "url": "/tables"
+    },
+    {
+      "name": "Kassir",
+      "short_name": "Kassir",
+      "description": "Kassir panelinə keç",
+      "url": "/cashier"
     }
   ]
 }

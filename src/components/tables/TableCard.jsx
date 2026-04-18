@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Monitor, Gamepad2, Play, Square, Clock, Plus, Coffee, ArrowRightLeft, Link2, ChevronDown, ChevronUp, Zap, Lock, Tv2, Pause, PlayCircle } from 'lucide-react';
+import { Monitor, Gamepad2, Play, Square, Clock, Plus, Coffee, ArrowRightLeft, Link2, ChevronDown, ChevronUp, Zap, Lock, Tv2, Pause, PlayCircle, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 function formatTime(totalSeconds) {
@@ -79,13 +80,27 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
               <p className="text-muted-foreground text-sm uppercase">({table.code}) {table.zone === 'cabinet' ? 'Kabinet' : 'Zal'} • {catLabels[table.category]}</p>
             </div>
           </div>
-          <span className={cn(
-            "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border",
-            statusConfig[table.status]?.color || 'bg-muted text-muted-foreground border-border'
-          )}>
-            {isLocked && <Lock className="w-3 h-3" />}
-            {statusConfig[table.status]?.label || table.status}
-          </span>
+          <div className="flex items-center gap-1">
+            <button
+              title="Müştəri linkini kopyala"
+              onClick={(e) => {
+                e.stopPropagation();
+                const url = `${window.location.origin}/client/${table.id}`;
+                navigator.clipboard.writeText(url);
+                toast.success(`${table.name} linki kopyalandı`);
+              }}
+              className="w-7 h-7 rounded-md hover:bg-blue-500/10 flex items-center justify-center transition-colors"
+            >
+              <Link2 className="w-3.5 h-3.5 text-blue-400" />
+            </button>
+            <span className={cn(
+              "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border",
+              statusConfig[table.status]?.color || 'bg-muted text-muted-foreground border-border'
+            )}>
+              {isLocked && <Lock className="w-3 h-3" />}
+              {statusConfig[table.status]?.label || table.status}
+            </span>
+          </div>
         </div>
 
         {/* Timer */}

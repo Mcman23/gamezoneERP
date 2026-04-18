@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#0f1629"/>
+  <rect x="40" y="40" width="432" height="432" rx="80" fill="#111827"/>
+  <!-- Gamepad icon centered -->
+  <g transform="translate(96, 140)">
+    <!-- Body -->
+    <rect x="0" y="50" width="320" height="160" rx="80" fill="#1e3a5f"/>
+    <!-- D-pad -->
+    <rect x="48" y="100" width="26" height="74" rx="8" fill="#3b82f6"/>
+    <rect x="26" y="122" width="74" height="26" rx="8" fill="#3b82f6"/>
+    <!-- Buttons -->
+    <circle cx="234" cy="120" r="18" fill="#6366f1"/>
+    <circle cx="272" cy="145" r="18" fill="#8b5cf6"/>
+    <circle cx="234" cy="170" r="18" fill="#3b82f6"/>
+    <circle cx="196" cy="145" r="18" fill="#06b6d4"/>
+    <!-- Analog sticks -->
+    <circle cx="106" cy="182" r="22" fill="#374151" stroke="#4b5563" stroke-width="5"/>
+    <circle cx="214" cy="208" r="22" fill="#374151" stroke="#4b5563" stroke-width="5"/>
+    <!-- Select/Start -->
+    <rect x="138" y="124" width="22" height="14" rx="5" fill="#4b5563"/>
+    <rect x="170" y="124" width="22" height="14" rx="5" fill="#4b5563"/>
+  </g>
+  <!-- Text -->
+  <text x="256" y="440" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#60a5fa" text-anchor="middle" letter-spacing="4">PLAYROOM</text>
+</svg>

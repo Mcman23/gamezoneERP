@@ -29,7 +29,7 @@ export default function AppLayout() {
   }, [user, location.pathname]);
 
   // Redirect cashiers away from admin-only pages
-  const CASHIER_ALLOWED = ['/tables', '/cashier', '/customers', '/reservations'];
+  const CASHIER_ALLOWED = ['/tables', '/cashier', '/customers', '/reservations', '/live'];
   useEffect(() => {
     if (user?.role === 'user' && !CASHIER_ALLOWED.includes(location.pathname)) {
       navigate('/tables', { replace: true });

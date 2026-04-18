@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Monitor, Gamepad2, Tv2, Zap, Link2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { DEFAULT_TABLES, CATEGORY_LABELS, getPsRate } from '@/lib/tableConfig';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
@@ -133,6 +133,17 @@ export default function Settings() {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <Button
+                        size="icon" variant="ghost" className="h-8 w-8 text-blue-400 hover:text-blue-300"
+                        title="Müştəri linkini kopyala"
+                        onClick={() => {
+                          const url = `${window.location.origin}/client/${table.id}`;
+                          navigator.clipboard.writeText(url);
+                          toast.success('Müştəri linki kopyalandı');
+                        }}
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(table)}><Pencil className="w-3.5 h-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(table)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
