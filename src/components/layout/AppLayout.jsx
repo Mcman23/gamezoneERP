@@ -18,7 +18,15 @@ export default function AppLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    base44.auth.me().then(setUser);
+    base44.auth.me().then((u) => {
+      setUser(u);
+      // If cashier, re-fetch to ensure custom fields (club_owner_id) are loaded
+      if (u?.role === 'user') {
+        base44.entities.User.filter({ id: u.id }).then((users) => {
+          if (users?.[0]) setUser({ ...u, ...users[0] });
+        });
+      }
+    });
   }, []);
 
   // Redirect owner to /owner panel

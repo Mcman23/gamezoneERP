@@ -21,14 +21,21 @@ export async function fetchClubEntities(entityApi, user, extraFilter = {}, sort,
 
   if (isOwner) return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
 
-  const ownerId = isAdmin ? user.id : (isCashier ? user.club_owner_id : null);
-  if (!ownerId) return [];
+  // Cashier: rely on RLS rules (club_owner_id = user.club_owner_id), just filter by extraFilter
+  if (isCashier) {
+    const ownerId = user.club_owner_id;
+    if (!ownerId) return [];
+    return extraFilter && Object.keys(extraFilter).length > 0
+      ? entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500)
+      : entityApi.filter({ club_owner_id: ownerId }, sort, limit || 500);
+  }
+
+  // Admin
+  const ownerId = user.id;
 
   const [byOwner, byCreator] = await Promise.all([
     entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500),
-    isAdmin
-      ? entityApi.filter({ created_by: user.email, ...extraFilter }, sort, limit || 500)
-      : Promise.resolve([]),
+    entityApi.filter({ created_by: user.email, ...extraFilter }, sort, limit || 500),
   ]);
 
   const map = {};
