@@ -1,13 +1,16 @@
 // Returns the effective club_owner_id for filtering entities
 // Owner → system-wide (no filter needed, handled per page)
-// Admin → their own user.id
+// Admin → user.club_owner_id if set, otherwise user.id (self-owner)
 // Cashier (user role) → their club_owner_id field (set by admin)
 export function useClub(user) {
   if (!user) return { clubOwnerId: null, isAdmin: false, isOwner: false, isCashier: false, isLinked: false };
   const isOwner = user.role === 'owner';
   const isAdmin = user.role === 'admin';
   const isCashier = user.role === 'user';
-  const clubOwnerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id || null) : null);
+  // Admin: use club_owner_id if set (shared club), fallback to own id (self-owner)
+  const clubOwnerId = isAdmin
+    ? (user.club_owner_id || user.id)
+    : (isCashier ? (user.club_owner_id || null) : null);
   return { clubOwnerId, isAdmin, isOwner, isCashier, isLinked: !!clubOwnerId };
 }
 
@@ -30,8 +33,8 @@ export async function fetchClubEntities(entityApi, user, extraFilter = {}, sort,
       : entityApi.filter({ club_owner_id: ownerId }, sort, limit || 500);
   }
 
-  // Admin
-  const ownerId = user.id;
+  // Admin: use club_owner_id if set (shared club), else own id
+  const ownerId = user.club_owner_id || user.id;
 
   const [byOwner, byCreator] = await Promise.all([
     entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500),
