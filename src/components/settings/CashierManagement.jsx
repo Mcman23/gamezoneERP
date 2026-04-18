@@ -202,7 +202,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
               Sistemdə artıq mövcud olan istifadəçini kassir kimi kluba bağlayın və onun giriş şifrəsini burada qeyd edin.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 py-2" onKeyDown={(e) => e.key === 'Enter' && handleInvite()}>
             <div>
               <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                 <Mail className="w-3 h-3" /> Email <span className="text-destructive">*</span>
@@ -239,10 +239,13 @@ export default function CashierManagement({ user, clubOwnerId }) {
                 className="bg-secondary border-border"
                 placeholder="minimum 6 simvol"
               />
+              {form.password.trim() && form.password.trim().length < 6 && (
+                <p className="text-[11px] text-destructive mt-1">Şifrə ən azı 6 simvol olmalıdır.</p>
+              )}
             </div>
             <div className="bg-secondary border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-1.5">
               <p className="font-medium text-foreground">Necə işləyir:</p>
-              <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">1</span><span>Admin kassir üçün email və şifrə yaradır</span></div>
+              <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">1</span><span>Admin kassir üçün email və ən azı 6 simvolluq şifrə yaradır</span></div>
               <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">2</span><span>Kassir kluba avtomatik bağlanır</span></div>
               <div className="flex items-start gap-2"><span className="bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">3</span><span>Login məlumatı ilə sistemə daxil olur</span></div>
             </div>
@@ -251,7 +254,7 @@ export default function CashierManagement({ user, clubOwnerId }) {
             <Button variant="outline" onClick={() => { setInviteDialog(false); resetForm(); }}>Ləğv et</Button>
             <Button
               onClick={handleInvite}
-              disabled={loading || !form.email.trim() || !form.password.trim()}
+              disabled={loading || !form.email.trim() || !form.password.trim() || form.password.trim().length < 6}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {loading ? (
