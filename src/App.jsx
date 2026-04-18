@@ -19,6 +19,8 @@ import DataImport from './pages/DataImport';
 import OwnerPanel from './pages/OwnerPanel';
 import Customers from './pages/Customers';
 import Reservations from './pages/Reservations';
+import ClientPanel from './pages/ClientPanel';
+import LiveDashboard from './pages/LiveDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -60,7 +62,9 @@ const AuthenticatedApp = () => {
         <Route path="/owner" element={<OwnerPanel />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/reservations" element={<Reservations />} />
+        <Route path="/live" element={<LiveDashboard />} />
       </Route>
+      <Route path="/client/:tableId" element={<ClientPanel />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
