@@ -68,6 +68,10 @@
       "type": "number",
       "default": 0,
       "description": "S\u0131ralama n\u00f6mr\u0259si"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin (admin) ID-si"
     }
   },
   "required": [
@@ -75,5 +79,63 @@
     "code",
     "category",
     "hourly_rate"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
 }
