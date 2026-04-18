@@ -54,7 +54,7 @@ export const DEFAULT_TABLES = [
 ];
 
 export function getPsRate(model, zone) {
-  return PS_PRICING[model]?.[zone] ?? 3;
+  return PS_PRICING[model]?.[zone] ?? 1.5;
 }
 
 export function roundCost(value) {
