@@ -55,54 +55,59 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
 
   // ── Start session ────────────────────────────────────────────────────────────
   const startSession = async (table, durationMinutes, hourlyRateOverride = null, customerPhone = null, customerName = null) => {
-    const existingSession = sessionMap[table.id];
-    console.log('startSession called', { tableStatus: table.status, existingSession, clubOwnerId });
-    toast.info(`Debug: masa status=${table.status}, clubId=${clubOwnerId}`);
+    try {
+      const existingSession = sessionMap[table.id];
+      console.log('startSession called', { tableStatus: table.status, existingSession, clubOwnerId });
 
-    // Guard: must be available
-    if (table.status !== 'available') {
-      toast.error('Bu masa hal-hazırda mövcud deyil (dolu, kilidli və ya texniki baxım)');
-      return;
+      // Guard: must be available
+      if (table.status !== 'available') {
+        toast.error('Bu masa hal-hazırda mövcud deyil (dolu, kilidli və ya texniki baxım)');
+        return;
+      }
+
+      // Double-booking guard
+      if (existingSession) {
+        toast.error(`${table.name} üçün artıq aktiv sessiya mövcuddur`);
+        return;
+      }
+
+      const now = new Date();
+      const isUnlimited = durationMinutes === null;
+      const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
+      const rate = hourlyRateOverride ?? table.hourly_rate;
+      const sessionCost = isUnlimited ? 0 : roundCost((durationMinutes / 60) * rate);
+
+      const session = await base44.entities.Session.create({
+        table_id: table.id,
+        table_name: table.name,
+        table_category: table.category,
+        start_time: now.toISOString(),
+        end_time: isUnlimited ? null : endTime.toISOString(),
+        duration_minutes: isUnlimited ? 0 : durationMinutes,
+        hourly_rate: rate,
+        session_cost: sessionCost,
+        orders_cost: 0,
+        total_cost: sessionCost,
+        status: 'active',
+        paid: false,
+        is_unlimited: isUnlimited,
+        club_owner_id: clubOwnerId,
+        ...(customerPhone ? { customer_phone: customerPhone, customer_name: customerName || '' } : {}),
+      });
+
+      console.log('Session created:', session);
+
+      await base44.entities.GameTable.update(table.id, {
+        status: 'occupied',
+        current_session_id: session.id,
+      });
+
+      invalidate();
+      toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəq'}`);
+    } catch (error) {
+      console.error('startSession error:', error);
+      toast.error(`Xəta: ${error?.message || JSON.stringify(error)}`);
     }
-
-    // Double-booking guard: check for any active/paused session on this table
-    if (existingSession) {
-      toast.error(`${table.name} üçün artıq aktiv sessiya mövcuddur`);
-      return;
-    }
-
-    const now = new Date();
-    const isUnlimited = durationMinutes === null;
-    const endTime = isUnlimited ? null : new Date(now.getTime() + durationMinutes * 60000);
-    const rate = hourlyRateOverride ?? table.hourly_rate;
-    const sessionCost = isUnlimited ? 0 : roundCost((durationMinutes / 60) * rate);
-
-    // Atomic: create session first, then update table
-    const session = await base44.entities.Session.create({
-      table_id: table.id,
-      table_name: table.name,
-      table_category: table.category,
-      start_time: now.toISOString(),
-      end_time: isUnlimited ? null : endTime.toISOString(),
-      duration_minutes: isUnlimited ? 0 : durationMinutes,
-      hourly_rate: rate,
-      session_cost: sessionCost,
-      orders_cost: 0,
-      total_cost: sessionCost,
-      status: 'active',
-      paid: false,
-      is_unlimited: isUnlimited,
-      club_owner_id: clubOwnerId,
-      ...(customerPhone ? { customer_phone: customerPhone, customer_name: customerName || '' } : {}),
-    });
-
-    await base44.entities.GameTable.update(table.id, {
-      status: 'occupied',
-      current_session_id: session.id,
-    });
-
-    invalidate();
-    toast.success(`${table.name} açıldı — ${isUnlimited ? 'Limitsiz' : durationMinutes + ' dəq'}`);
   };
 
   // ── Pause session ────────────────────────────────────────────────────────────
@@ -144,45 +149,48 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
 
   // ── Stop session ─────────────────────────────────────────────────────────────
   const stopSession = async (table, session, paymentMethod = 'cash', billingMinutes = null, amountPaid = null) => {
-    if (!session) {
-      toast.error('Sessiya tapılmadı');
-      return;
+    try {
+      if (!session) {
+        toast.error('Sessiya tapılmadı');
+        return;
+      }
+
+      const isUnlimited = session.is_unlimited;
+      const actualBilling =
+        billingMinutes ?? (isUnlimited ? getBillingElapsedMinutes(session) : null);
+      const actualCost = isUnlimited
+        ? calcUnlimitedCost(actualBilling, session.hourly_rate)
+        : session.session_cost || 0;
+      const totalCost = roundCost(actualCost + (session.orders_cost || 0));
+
+      await base44.entities.Session.update(session.id, {
+        status: 'completed',
+        end_time: new Date().toISOString(),
+        duration_minutes: isUnlimited ? actualBilling || 0 : session.duration_minutes,
+        session_cost: actualCost,
+        total_cost: totalCost,
+        paid: true,
+        payment_method: paymentMethod,
+        pause_start: null,
+      });
+
+      await base44.entities.GameTable.update(table.id, {
+        status: 'available',
+        current_session_id: '',
+      });
+
+      upsertCustomer(session.customer_phone, session.customer_name, totalCost);
+
+      invalidate();
+      const change =
+        amountPaid && amountPaid > totalCost
+          ? ` | Qaytarılacaq: ${roundCost(amountPaid - totalCost)} ₼`
+          : '';
+      toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼${change}`);
+    } catch (error) {
+      console.error('stopSession error:', error);
+      toast.error(`Xəta: ${error?.message || JSON.stringify(error)}`);
     }
-
-    const isUnlimited = session.is_unlimited;
-    const actualBilling =
-      billingMinutes ?? (isUnlimited ? getBillingElapsedMinutes(session) : null);
-    const actualCost = isUnlimited
-      ? calcUnlimitedCost(actualBilling, session.hourly_rate)
-      : session.session_cost || 0;
-    const totalCost = roundCost(actualCost + (session.orders_cost || 0));
-
-    // Atomic: update session → free table
-    await base44.entities.Session.update(session.id, {
-      status: 'completed',
-      end_time: new Date().toISOString(),
-      duration_minutes: isUnlimited ? actualBilling || 0 : session.duration_minutes,
-      session_cost: actualCost,
-      total_cost: totalCost,
-      paid: true,
-      payment_method: paymentMethod,
-      pause_start: null,
-    });
-
-    await base44.entities.GameTable.update(table.id, {
-      status: 'available',
-      current_session_id: '',
-    });
-
-    // Non-blocking customer upsert
-    upsertCustomer(session.customer_phone, session.customer_name, totalCost);
-
-    invalidate();
-    const change =
-      amountPaid && amountPaid > totalCost
-        ? ` | Qaytarılacaq: ${roundCost(amountPaid - totalCost)} ₼`
-        : '';
-    toast.success(`${table.name} bağlandı — ${totalCost.toFixed(2)} ₼${change}`);
   };
 
   // ── Extend session ───────────────────────────────────────────────────────────

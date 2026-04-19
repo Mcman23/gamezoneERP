@@ -7,7 +7,8 @@ export function useClub(user) {
   const isOwner = user.role === 'owner';
   const isAdmin = user.role === 'admin';
   const isCashier = user.role === 'user';
-  const clubOwnerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id || null) : null);
+  // Admin → own id; Cashier → club_owner_id (fallback to own id for unlinked cashiers); Owner → null (no filter)
+  const clubOwnerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id ?? user.id) : null);
   return { clubOwnerId, isAdmin, isOwner, isCashier, isLinked: !!clubOwnerId };
 }
 
@@ -21,8 +22,10 @@ export async function fetchClubEntities(entityApi, user, extraFilter = {}, sort,
 
   if (isOwner) return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
 
-  const ownerId = isAdmin ? user.id : (isCashier ? user.club_owner_id : null);
-  if (!ownerId) return [];
+  const ownerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id ?? user.id) : null);
+
+  // If no ownerId resolved, return unfiltered list (fallback for unlinked accounts)
+  if (!ownerId) return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
 
   const [byOwner, byCreator] = await Promise.all([
     entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500),
