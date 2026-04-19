@@ -1,42 +1,66 @@
+const db = globalThis.__B44_DB__ || { auth:{ isAuthenticated: async()=>false, me: async()=>null }, entities:new Proxy({}, { get:()=>({ filter:async()=>[], get:async()=>null, create:async()=>({}), update:async()=>({}), delete:async()=>({}) }) }), integrations:{ Core:{ UploadFile:async()=>({ file_url:'' }) } } };
+
 // Returns the effective club_owner_id for filtering entities
-// Owner → system-wide (no filter needed, handled per page)
-// Admin → their own user.id
-// Cashier (user role) → their club_owner_id field (set by admin)
+// Owner  → null (no filter, sees everything)
+// Admin  → user.id (their own club)
+// Cashier (role: 'user') → user.club_owner_id (set by admin when linking)
 export function useClub(user) {
   if (!user) return { clubOwnerId: null, isAdmin: false, isOwner: false, isCashier: false, isLinked: false };
-  const isOwner = user.role === 'owner';
-  const isAdmin = user.role === 'admin';
+  const isOwner   = user.role === 'owner';
+  const isAdmin   = user.role === 'admin';
   const isCashier = user.role === 'user';
-  // Admin → own id; Cashier → club_owner_id (fallback to own id for unlinked cashiers); Owner → null (no filter)
-  const clubOwnerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id ?? user.id) : null);
-  return { clubOwnerId, isAdmin, isOwner, isCashier, isLinked: !!clubOwnerId };
+
+  // CRITICAL FIX: kassir ucun yalniz club_owner_id istifade et
+  // user.id fallback-i silindi - cunku user.id kassirin oz id-sidir, admin deyil
+  const clubOwnerId = isOwner
+    ? null
+    : isAdmin
+    ? user.id
+    : isCashier
+    ? (user.club_owner_id || null)
+    : null;
+
+  return {
+    clubOwnerId,
+    isAdmin,
+    isOwner,
+    isCashier,
+    isLinked: isCashier ? !!user.club_owner_id : true,
+  };
 }
 
-// Backward-compatible entity fetch:
-// Returns records where club_owner_id matches OR (club_owner_id is null AND created by same admin)
+// Backward-compatible entity fetch with proper multi-tenant filtering
 export async function fetchClubEntities(entityApi, user, extraFilter = {}, sort, limit) {
   if (!user) return [];
-  const isAdmin = user.role === 'admin';
+
+  const isOwner   = user.role === 'owner';
+  const isAdmin   = user.role === 'admin';
   const isCashier = user.role === 'user';
-  const isOwner = user.role === 'owner';
 
-  if (isOwner) return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
+  if (isOwner) {
+    return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
+  }
 
-  const ownerId = isAdmin ? user.id : (isCashier ? (user.club_owner_id ?? user.id) : null);
+  if (isAdmin) {
+    const ownerId = user.id;
+    const [byOwner, byCreator] = await Promise.all([
+      entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500),
+      entityApi.filter({ created_by: user.email, ...extraFilter }, sort, limit || 500),
+    ]);
+    const map = {};
+    byOwner.forEach(r => { map[r.id] = r; });
+    byCreator.forEach(r => { if (!r.club_owner_id && !map[r.id]) map[r.id] = r; });
+    return Object.values(map);
+  }
 
-  // If no ownerId resolved, return unfiltered list (fallback for unlinked accounts)
-  if (!ownerId) return limit ? entityApi.list(sort, limit) : entityApi.list(sort);
+  if (isCashier) {
+    const ownerId = user.club_owner_id;
+    if (!ownerId) {
+      console.warn('Kassir kluba baglanmayib (club_owner_id yoxdur)');
+      return [];
+    }
+    return entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500);
+  }
 
-  const [byOwner, byCreator] = await Promise.all([
-    entityApi.filter({ club_owner_id: ownerId, ...extraFilter }, sort, limit || 500),
-    isAdmin
-      ? entityApi.filter({ created_by: user.email, ...extraFilter }, sort, limit || 500)
-      : Promise.resolve([]),
-  ]);
-
-  const map = {};
-  byOwner.forEach(r => { map[r.id] = r; });
-  // Only include creator records that have NO club_owner_id (old records before multi-tenancy)
-  byCreator.forEach(r => { if (!r.club_owner_id && !map[r.id]) map[r.id] = r; });
-  return Object.values(map);
+  return [];
 }
