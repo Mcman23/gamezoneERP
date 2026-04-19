@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import { Monitor, Gamepad2, Tv2, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { CATEGORY_LABELS } from '@/lib/tableConfig';
 import TableCard from '@/components/tables/TableCard';
@@ -70,6 +71,42 @@ export default function Tables() {
   activeSessions.forEach((s) => {sessionMap[s.table_id] = s;});
 
   const actions = useTableActions(queryClient, sessionMap, clubOwnerId);
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['tables', clubOwnerId] });
+    queryClient.invalidateQueries({ queryKey: ['active-sessions', clubOwnerId] });
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      activeSessions.forEach(async (session) => {
+        if (session.status !== 'active' || session.is_unlimited || !session.end_time) return;
+        const secondsLeft = Math.floor((new Date(session.end_time) - now) / 1000);
+        if (secondsLeft <= 0) {
+          try {
+            await base44.entities.Session.update(session.id, {
+              status: 'completed',
+              end_time: now.toISOString(),
+              total_cost: (session.session_cost || 0) + (session.orders_cost || 0),
+              paid: false,
+            });
+            await base44.entities.GameTable.update(session.table_id, {
+              status: 'available',
+              current_session_id: '',
+            });
+            toast.warning(`⏰ ${session.table_name} — vaxt bitdi, masa boşaldıldı!`, { duration: 8000 });
+            invalidate();
+          } catch (e) {
+            console.error('Auto-close error:', e);
+          }
+        } else if (secondsLeft <= 120 && secondsLeft > 115) {
+          toast.warning(`⚠️ ${session.table_name} — 2 dəqiqə qaldı!`, { duration: 6000 });
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeSessions, clubOwnerId]);
 
   const grouped = useMemo(() => {
     const groups = {};

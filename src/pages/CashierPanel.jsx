@@ -1,15 +1,86 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Receipt, Banknote, CreditCard, Monitor, ShoppingCart, Clock, Download } from 'lucide-react';
+import { Receipt, Banknote, CreditCard, Monitor, ShoppingCart, Clock, Download, Square } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import ActiveOrders from '@/components/cashier/ActiveOrders';
 import StockAlerts from '@/components/notifications/StockAlerts';
+import StopSessionDialog from '@/components/tables/StopSessionDialog';
+import { useTableActions } from '@/hooks/useTableActions';
+
+function formatRemaining(endTime) {
+  const secs = Math.max(0, Math.floor((new Date(endTime) - new Date()) / 1000));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function formatElapsed(startTime, pausedMinutes = 0) {
+  const secs = Math.max(0, Math.floor((new Date() - new Date(startTime)) / 1000) - (pausedMinutes * 60));
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function ActiveSessionRow({ session, onStop }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const isUnlimited = session.is_unlimited;
+  const secondsLeft = session.end_time ? Math.floor((new Date(session.end_time) - new Date()) / 1000) : null;
+  const isWarning = secondsLeft !== null && secondsLeft <= 120 && secondsLeft > 0;
+  const isDanger = secondsLeft !== null && secondsLeft <= 0;
+
+  return (
+    <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl border gap-3 transition-all ${
+      isDanger ? 'bg-destructive/5 border-destructive/30' :
+      isWarning ? 'bg-yellow-500/5 border-yellow-500/30' :
+      'bg-secondary/50 border-border'
+    }`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <Monitor className={`w-4 h-4 flex-shrink-0 ${isDanger ? 'text-destructive' : isWarning ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{session.table_name}</p>
+          <p className="text-xs text-muted-foreground">
+            {session.customer_name ? `${session.customer_name} • ` : ''}
+            {format(new Date(session.start_time), 'HH:mm')}-dən
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="text-right">
+          <p className={`text-sm font-bold font-mono tabular-nums ${isDanger ? 'text-destructive' : isWarning ? 'text-yellow-500' : 'text-foreground'}`}>
+            {isUnlimited
+              ? formatElapsed(session.start_time, session.total_paused_minutes)
+              : session.end_time ? formatRemaining(session.end_time) : '—'
+            }
+          </p>
+          <p className="text-xs text-muted-foreground">{isUnlimited ? 'keçib' : 'qaldı'}</p>
+        </div>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="h-8 w-8 p-0"
+          onClick={() => onStop(session)}
+        >
+          <Square className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function exportCashierReport(data) {
   const rows = [
@@ -29,7 +100,6 @@ function exportCashierReport(data) {
   data.orders.forEach(o => {
     rows.push([o.table_name || '', `${(o.total_amount || 0).toFixed(2)} AZN`, o.created_date ? format(new Date(o.created_date), 'HH:mm') : '']);
   });
-
   const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -43,6 +113,9 @@ function exportCashierReport(data) {
 export default function CashierPanel() {
   const { user } = useOutletContext();
   const { clubOwnerId, isCashier } = useClub(user);
+  const queryClient = useQueryClient();
+  const [stopDialog, setStopDialog] = useState({ open: false, table: null, session: null });
+
   const todayInterval = useMemo(() => {
     const now = new Date();
     return { start: startOfDay(now), end: endOfDay(now) };
@@ -52,20 +125,41 @@ export default function CashierPanel() {
     queryKey: ['cashier-sessions', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'completed' }, '-created_date', 500) : [],
     enabled: !!user,
+    refetchInterval: 10000,
   });
 
-  const { data: activeSessions = [] } = useQuery({
+  const { data: activeSessions = [], refetch: refetchActive } = useQuery({
     queryKey: ['active-sessions', clubOwnerId],
-    queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [],
+    queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, {}, '-created_date', 100).then(all => all.filter(s => s.status === 'active' || s.status === 'paused')) : [],
     enabled: !!user,
-    refetchInterval: 15000,
+    refetchInterval: 10000,
+  });
+
+  const { data: tables = [] } = useQuery({
+    queryKey: ['tables', clubOwnerId],
+    queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
+    enabled: !!user,
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['cashier-orders', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.Order, user, {}, '-created_date', 500) : [],
     enabled: !!user,
+    refetchInterval: 10000,
   });
+
+  const sessionMap = useMemo(() => {
+    const map = {};
+    activeSessions.forEach(s => { map[s.table_id] = s; });
+    return map;
+  }, [activeSessions]);
+
+  const actions = useTableActions(queryClient, sessionMap, clubOwnerId);
+
+  const handleStopClick = (session) => {
+    const table = tables.find(t => t.id === session.table_id) || { id: session.table_id, name: session.table_name, hourly_rate: session.hourly_rate, category: session.table_category };
+    setStopDialog({ open: true, table, session });
+  };
 
   const todaySessions = useMemo(() => sessions.filter(s => {
     try { return isWithinInterval(new Date(s.created_date), todayInterval); } catch { return false; }
@@ -93,7 +187,6 @@ export default function CashierPanel() {
     { label: 'Sifarişlər', value: `${orderRevenue.toFixed(2)} ₼`, icon: ShoppingCart, color: 'text-purple-400', bg: 'bg-purple-400/10' },
   ];
 
-  // Cashier not linked to a club
   if (isCashier && !clubOwnerId) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
@@ -101,9 +194,7 @@ export default function CashierPanel() {
           <Receipt className="w-8 h-8 text-yellow-500" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Hesabınız Hələ Kluba Bağlanmayıb</h2>
-        <p className="text-sm text-muted-foreground max-w-sm">
-          Admin sizi kluba əlavə etməlidir. Lütfən, klub sahibinizlə əlaqə saxlayın.
-        </p>
+        <p className="text-sm text-muted-foreground max-w-sm">Admin sizi kluba əlavə etməlidir. Lütfən, klub sahibinizlə əlaqə saxlayın.</p>
       </div>
     );
   }
@@ -134,13 +225,32 @@ export default function CashierPanel() {
         ))}
       </div>
 
-      {/* Stock alerts */}
       <StockAlerts clubOwnerId={clubOwnerId} />
 
-      {/* Active Orders — real-time */}
+      {/* Active Sessions Card */}
+      <Card className="border-border p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Monitor className="w-4 h-4 text-primary" /> Aktiv Sessiyalar
+            {activeSessions.length > 0 && (
+              <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{activeSessions.length}</span>
+            )}
+          </h3>
+          <Button size="sm" variant="ghost" onClick={() => refetchActive()} className="h-7 text-xs text-muted-foreground">Yenilə</Button>
+        </div>
+        {activeSessions.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">Aktiv sessiya yoxdur</p>
+        ) : (
+          <div className="space-y-2">
+            {activeSessions.map(session => (
+              <ActiveSessionRow key={session.id} session={session} onStop={handleStopClick} />
+            ))}
+          </div>
+        )}
+      </Card>
+
       <ActiveOrders user={user} clubOwnerId={clubOwnerId} />
 
-      {/* Recent sessions */}
       <Card className="border-border p-5">
         <h3 className="font-semibold text-foreground mb-4">Bu günkü sessiyalar</h3>
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -163,7 +273,6 @@ export default function CashierPanel() {
         </div>
       </Card>
 
-      {/* Recent orders */}
       <Card className="border-border p-5">
         <h3 className="font-semibold text-foreground mb-4">Bu günkü sifarişlər</h3>
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -179,6 +288,14 @@ export default function CashierPanel() {
           ))}
         </div>
       </Card>
+
+      <StopSessionDialog
+        open={stopDialog.open}
+        onOpenChange={(v) => setStopDialog(s => ({ ...s, open: v }))}
+        table={stopDialog.table}
+        session={stopDialog.session}
+        onConfirm={actions.stopSession}
+      />
     </div>
   );
 }

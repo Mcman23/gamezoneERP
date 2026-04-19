@@ -43,7 +43,7 @@ export default function AdminPanel() {
   const { data: expenses = [] } = useQuery({ queryKey: ['expenses-admin', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Expense.filter({ club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
   const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => clubOwnerId ? base44.entities.Session.filter({ status: 'active', club_owner_id: clubOwnerId }) : [], enabled: !!clubOwnerId });
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'owner') {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <ShieldAlert className="w-12 h-12 text-destructive/50" />

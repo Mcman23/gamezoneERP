@@ -53,8 +53,8 @@ export default function TableCard({ table, session, onStart, onStop, onPause, on
   }, [isOccupied, isPaused, session?.end_time, session?.is_unlimited, session?.start_time, session?.total_paused_minutes]);
 
   const isUnlimited = session?.is_unlimited;
-  const isWarning = !isUnlimited && !isPaused && remaining !== null && remaining <= 600 && remaining > 300;
-  const isDanger = !isUnlimited && !isPaused && remaining !== null && remaining <= 300;
+  const isWarning = !isUnlimited && !isPaused && remaining !== null && remaining <= 120 && remaining > 0;
+  const isDanger = !isUnlimited && !isPaused && remaining !== null && remaining <= 0;
   const Icon = catIcons[table.category] || Monitor;
   const totalCost = session ? ((session.session_cost || 0) + (session.orders_cost || 0)).toFixed(2) : '0.00';
 

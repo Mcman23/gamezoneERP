@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       ) {
         const endTime = new Date(activeSession.end_time);
         const overrunMs = now - endTime;
-        if (overrunMs > 30 * 60 * 1000) {
+        if (overrunMs > 0) {
           const durationMinutes = activeSession.duration_minutes || 0;
           const sessionCost = activeSession.session_cost || 0;
           const totalCost = sessionCost + (activeSession.orders_cost || 0);
