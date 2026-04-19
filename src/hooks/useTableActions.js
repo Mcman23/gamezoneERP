@@ -55,6 +55,10 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
 
   // ── Start session ────────────────────────────────────────────────────────────
   const startSession = async (table, durationMinutes, hourlyRateOverride = null, customerPhone = null, customerName = null) => {
+    const existingSession = sessionMap[table.id];
+    console.log('startSession called', { tableStatus: table.status, existingSession, clubOwnerId });
+    toast.info(`Debug: masa status=${table.status}, clubId=${clubOwnerId}`);
+
     // Guard: must be available
     if (table.status !== 'available') {
       toast.error('Bu masa hal-hazırda mövcud deyil (dolu, kilidli və ya texniki baxım)');
@@ -62,7 +66,6 @@ export function useTableActions(queryClient, sessionMap, clubOwnerId) {
     }
 
     // Double-booking guard: check for any active/paused session on this table
-    const existingSession = sessionMap[table.id];
     if (existingSession) {
       toast.error(`${table.name} üçün artıq aktiv sessiya mövcuddur`);
       return;

@@ -53,7 +53,8 @@ export default function Tables() {
     queryKey: ['tables', clubOwnerId],
     queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user, {}, 'order_number') : [],
     enabled: !!user,
-    refetchInterval: 30000
+    refetchInterval: 8000,
+    staleTime: 0,
   });
 
   const { data: activeSessions = [] } = useQuery({
@@ -64,7 +65,8 @@ export default function Tables() {
       return all.filter((x) => x.status === 'active' || x.status === 'paused');
     },
     enabled: !!user,
-    refetchInterval: 15000
+    refetchInterval: 8000,
+    staleTime: 0,
   });
 
   const sessionMap = {};
