@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
@@ -6,12 +6,10 @@ import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Receipt, Banknote, CreditCard, Monitor, ShoppingCart, Clock, Download, ShoppingBag, History } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Receipt, Banknote, CreditCard, Monitor, ShoppingCart, Clock, Download } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import ActiveOrders from '@/components/cashier/ActiveOrders';
 import StockAlerts from '@/components/notifications/StockAlerts';
-import CashierOrderPanel from '@/components/cashier/CashierOrderPanel';
 
 function exportCashierReport(data) {
   const rows = [
@@ -85,7 +83,6 @@ export default function CashierPanel() {
   const sessionCount = todaySessions.length;
 
   const reportData = { totalRevenue, cashTotal, cardTotal, sessionRevenue, orderRevenue, sessionCount, orders: todayOrders };
-  const [activeTab, setActiveTab] = useState('overview');
 
   const stats = [
     { label: 'Ümumi Gəlir', value: `${totalRevenue.toFixed(2)} ₼`, icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
@@ -123,7 +120,6 @@ export default function CashierPanel() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {stats.map(stat => (
           <Card key={stat.label} className="p-4 border-border">
@@ -138,81 +134,51 @@ export default function CashierPanel() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl w-fit">
-        {[
-          { id: 'overview', label: 'Ümumi baxış', icon: Receipt },
-          { id: 'order', label: 'Sifariş yaz', icon: ShoppingBag },
-          { id: 'history', label: 'Tarixçə', icon: History },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-              activeTab === tab.id
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Stock alerts */}
+      <StockAlerts clubOwnerId={clubOwnerId} />
 
-      {activeTab === 'overview' && (
-        <>
-          <StockAlerts clubOwnerId={clubOwnerId} />
-          <ActiveOrders user={user} clubOwnerId={clubOwnerId} />
-        </>
-      )}
+      {/* Active Orders — real-time */}
+      <ActiveOrders user={user} clubOwnerId={clubOwnerId} />
 
-      {activeTab === 'order' && (
-        <CashierOrderPanel user={user} clubOwnerId={clubOwnerId} />
-      )}
-
-      {activeTab === 'history' && (
-        <>
-          <Card className="border-border p-5">
-            <h3 className="font-semibold text-foreground mb-4">Bu günkü sessiyalar</h3>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {todaySessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sessiya yoxdur</p>}
-              {todaySessions.slice(0, 20).map(session => (
-                <div key={session.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-secondary/50 border border-border">
-                  <div className="flex items-center gap-3">
-                    <Monitor className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{session.table_name}</p>
-                      <p className="text-xs text-muted-foreground">{session.duration_minutes || 0} dəq • {session.created_date ? format(new Date(session.created_date), 'HH:mm') : ''}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">{(session.total_cost || 0).toFixed(2)} ₼</p>
-                    <Badge variant="secondary" className="text-[10px]">{session.payment_method === 'card' ? 'Kart' : 'Nağd'}</Badge>
-                  </div>
+      {/* Recent sessions */}
+      <Card className="border-border p-5">
+        <h3 className="font-semibold text-foreground mb-4">Bu günkü sessiyalar</h3>
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          {todaySessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sessiya yoxdur</p>}
+          {todaySessions.slice(0, 20).map(session => (
+            <div key={session.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-secondary/50 border border-border">
+              <div className="flex items-center gap-3">
+                <Monitor className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">{session.table_name}</p>
+                  <p className="text-xs text-muted-foreground">{session.duration_minutes || 0} dəq • {session.created_date ? format(new Date(session.created_date), 'HH:mm') : ''}</p>
                 </div>
-              ))}
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-foreground">{(session.total_cost || 0).toFixed(2)} ₼</p>
+                <Badge variant="secondary" className="text-[10px]">{session.payment_method === 'card' ? 'Kart' : 'Nağd'}</Badge>
+              </div>
             </div>
-          </Card>
+          ))}
+        </div>
+      </Card>
 
-          <Card className="border-border p-5">
-            <h3 className="font-semibold text-foreground mb-4">Bu günkü sifarişlər</h3>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {todayOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sifariş yoxdur</p>}
-              {todayOrders.slice(0, 15).map(order => (
-                <div key={order.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-secondary/50 border border-border">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{order.table_name}</p>
-                    <p className="text-xs text-muted-foreground">{(order.items || []).map(i => `${i.product_name} x${i.quantity}`).join(', ')}</p>
-                  </div>
-                  <p className="text-sm font-bold text-primary">{(order.total_amount || 0).toFixed(2)} ₼</p>
-                </div>
-              ))}
+      {/* Recent orders */}
+      <Card className="border-border p-5">
+        <h3 className="font-semibold text-foreground mb-4">Bu günkü sifarişlər</h3>
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {todayOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sifariş yoxdur</p>}
+          {todayOrders.slice(0, 15).map(order => (
+            <div key={order.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-secondary/50 border border-border">
+              <div>
+                <p className="text-sm font-medium text-foreground">{order.table_name}</p>
+                <p className="text-xs text-muted-foreground">{(order.items || []).map(i => `${i.product_name} x${i.quantity}`).join(', ')}</p>
+              </div>
+              <p className="text-sm font-bold text-primary">{(order.total_amount || 0).toFixed(2)} ₼</p>
             </div>
-          </Card>
-        </>
-      )}
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

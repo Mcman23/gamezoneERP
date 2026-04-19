@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, Link } from 'react-router-dom';
 import { useClub, fetchClubEntities } from '@/hooks/useClub';
 import { Card } from '@/components/ui/card';
-import { Monitor, Clock, DollarSign, ShoppingCart, TrendingUp, Activity, AlertTriangle, PackageX } from 'lucide-react';
+import { Monitor, Clock, DollarSign, ShoppingCart, TrendingUp, Activity } from 'lucide-react';
 import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 export default function Dashboard() {
@@ -33,11 +33,10 @@ export default function Dashboard() {
   }, []);
 
   const { data: tables = [] } = useQuery({ queryKey: ['tables', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user) : [], enabled: !!user });
-  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [], refetchInterval: 60000, enabled: !!user });
+  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [], refetchInterval: 15000, enabled: !!user });
   const { data: completedSessions = [] } = useQuery({ queryKey: ['completed-sessions-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'completed' }, '-created_date', 200) : [], enabled: !!user });
   const { data: orders = [] } = useQuery({ queryKey: ['orders-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Order, user, {}, '-created_date', 200) : [], enabled: !!user });
   const { data: expenses = [] } = useQuery({ queryKey: ['expenses-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Expense, user, {}, '-created_date', 200) : [], enabled: !!user });
-  const { data: products = [] } = useQuery({ queryKey: ['products-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Product, user) : [], enabled: !!user });
 
   const todaySessions = completedSessions.filter(s => { try { return isWithinInterval(new Date(s.created_date), todayInterval); } catch { return false; } });
   const todayOrders = orders.filter(o => { try { return isWithinInterval(new Date(o.created_date), todayInterval); } catch { return false; } });
@@ -50,11 +49,6 @@ export default function Dashboard() {
   const netProfit = totalRevenue - totalExpenses;
 
   const occupied = tables.filter(t => t.status === 'occupied').length;
-  const lowStock = products.filter((p) => {
-    const qty = p.stock_quantity ?? 0;
-    return qty > 0 && qty <= (p.low_stock_threshold ?? 3);
-  });
-  const outOfStock = products.filter((p) => (p.stock_quantity ?? 0) === 0);
 
   const stats = [
     { label: 'Günlük Gəlir', value: `${totalRevenue.toFixed(2)} ₼`, icon: DollarSign, color: 'text-green-500', bg: 'bg-green-500/10' },
@@ -104,32 +98,6 @@ export default function Dashboard() {
                 <p className="text-sm font-bold text-primary">{((session.session_cost || 0) + (session.orders_cost || 0)).toFixed(2)} ₼</p>
               </div>
             ))}
-          </div>
-        </Card>
-      )}
-
-      {(lowStock.length > 0 || outOfStock.length > 0) && (
-        <Card className="border-border p-5">
-          <h3 className="font-semibold text-foreground mb-4">Stok siqnalları</h3>
-          <div className="space-y-2">
-            {outOfStock.length > 0 && (
-              <Link to="/products" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 hover:bg-destructive/15 transition-colors">
-                <PackageX className="w-4 h-4 text-destructive shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-destructive">Bitən məhsullar: {outOfStock.length}</p>
-                  <p className="text-xs text-destructive/70">{outOfStock.slice(0, 4).map((p) => p.name).join(', ')}</p>
-                </div>
-              </Link>
-            )}
-            {lowStock.length > 0 && (
-              <Link to="/products" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 hover:bg-yellow-500/15 transition-colors">
-                <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-yellow-500">Az qalan məhsullar: {lowStock.length}</p>
-                  <p className="text-xs text-yellow-500/70">{lowStock.slice(0, 4).map((p) => `${p.name} (${p.stock_quantity})`).join(', ')}</p>
-                </div>
-              </Link>
-            )}
           </div>
         </Card>
       )}

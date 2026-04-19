@@ -16,7 +16,7 @@ export default function StockAlerts({ clubOwnerId }) {
   const outOfStock = products.filter(p => (p.stock_quantity ?? 0) === 0 && p.in_stock !== false);
   const lowStock = products.filter(p => {
     const qty = p.stock_quantity ?? 0;
-    const threshold = p.low_stock_threshold ?? 3;
+    const threshold = p.low_stock_threshold ?? 5;
     return qty > 0 && qty <= threshold;
   });
 

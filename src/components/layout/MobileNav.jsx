@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard, Receipt, Crown, Users, CalendarDays, Activity } from 'lucide-react';
+import { Monitor, Coffee, BarChart3, Settings, LayoutDashboard, Receipt, Crown, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -9,9 +9,7 @@ const navItems = [
   { path: '/tables', label: 'Masalar', icon: Monitor, roles: ['admin', 'user'] },
   { path: '/cashier', label: 'Kassir', icon: Receipt, roles: ['admin', 'user'] },
   { path: '/products', label: 'Məhsul', icon: Coffee, roles: ['admin'] },
-  { path: '/customers', label: 'Müştəri', icon: Users, roles: ['admin', 'user'] },
-  { path: '/reservations', label: 'Rezerv', icon: CalendarDays, roles: ['admin', 'user'] },
-  { path: '/live', label: 'Canlı', icon: Activity, roles: ['admin', 'user'] },
+  { path: '/customers', label: 'Müştəri', icon: Users, roles: ['admin'] },
   { path: '/reports', label: 'Hesabat', icon: BarChart3, roles: ['admin'] },
   { path: '/settings', label: 'Tənzim', icon: Settings, roles: ['admin'] },
 ];
