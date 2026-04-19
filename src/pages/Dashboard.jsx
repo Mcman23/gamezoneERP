@@ -33,7 +33,7 @@ export default function Dashboard() {
   }, []);
 
   const { data: tables = [] } = useQuery({ queryKey: ['tables', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.GameTable, user) : [], enabled: !!user });
-  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [], refetchInterval: 15000, enabled: !!user });
+  const { data: activeSessions = [] } = useQuery({ queryKey: ['active-sessions', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'active' }) : [], refetchInterval: 60000, enabled: !!user });
   const { data: completedSessions = [] } = useQuery({ queryKey: ['completed-sessions-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Session, user, { status: 'completed' }, '-created_date', 200) : [], enabled: !!user });
   const { data: orders = [] } = useQuery({ queryKey: ['orders-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Order, user, {}, '-created_date', 200) : [], enabled: !!user });
   const { data: expenses = [] } = useQuery({ queryKey: ['expenses-dash', clubOwnerId], queryFn: () => user ? fetchClubEntities(base44.entities.Expense, user, {}, '-created_date', 200) : [], enabled: !!user });
