@@ -18,6 +18,8 @@ import AdminPanel from './pages/AdminPanel';
 import DataImport from './pages/DataImport';
 import OwnerPanel from './pages/OwnerPanel';
 import Customers from './pages/Customers';
+import ClientKiosk from './pages/ClientKiosk';
+import KioskSetup from './pages/KioskSetup';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,7 +60,9 @@ const AuthenticatedApp = () => {
         <Route path="/import" element={<DataImport />} />
         <Route path="/owner" element={<OwnerPanel />} />
         <Route path="/customers" element={<Customers />} />
+        <Route path="/kiosk-setup" element={<KioskSetup />} />
       </Route>
+      <Route path="/kiosk" element={<ClientKiosk />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
