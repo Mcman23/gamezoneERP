@@ -11,6 +11,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
+    // Initialize Base44 DB connection (required!)
+    const base44 = createClientFromRequest(req);
+
     let body = {};
     try {
       body = await req.json();
