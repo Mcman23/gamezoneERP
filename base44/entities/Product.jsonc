@@ -24,7 +24,7 @@
         "portion"
       ],
       "default": "piece",
-      "description": "\u00d6l\u00e7\u00fc vahidi: \u0259d\u0259d, qram, porsiya"
+      "description": "\u00d6l\u00e7\u00fc vahidi"
     },
     "price": {
       "type": "number",
@@ -52,11 +52,106 @@
     "image_url": {
       "type": "string",
       "description": "M\u0259hsul \u015f\u0259kli"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin (admin) ID-si"
     }
   },
   "required": [
     "name",
     "category",
     "price"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "data.club_owner_id": "{{user.id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "user"
+              }
+            },
+            {
+              "data.club_owner_id": "{{user.club_owner_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "data.club_owner_id": "{{user.id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "data.club_owner_id": "{{user.id}}"
+            }
+          ]
+        }
+      ]
+    }
+  }
 }

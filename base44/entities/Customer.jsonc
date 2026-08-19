@@ -32,5 +32,20 @@
   },
   "required": [
     "phone"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.admin": "{{user.role}}"
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

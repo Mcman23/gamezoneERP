@@ -51,6 +51,10 @@
       ],
       "default": "pending",
       "description": "Sifari\u015f v\u0259ziyy\u0259ti"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin (admin) ID-si"
     }
   },
   "required": [
@@ -59,5 +63,63 @@
     "table_name",
     "items",
     "total_amount"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "data.club_owner_id": "{{user.data.club_owner_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.club_owner_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
+      ]
+    }
+  }
 }

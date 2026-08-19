@@ -68,6 +68,10 @@
       "type": "number",
       "default": 0,
       "description": "S\u0131ralama n\u00f6mr\u0259si"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin (admin) ID-si"
     }
   },
   "required": [

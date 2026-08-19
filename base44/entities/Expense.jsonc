@@ -41,6 +41,10 @@
       ],
       "default": "cash",
       "description": "\u00d6d\u0259ni\u015f \u00fcsulu"
+    },
+    "club_owner_id": {
+      "type": "string",
+      "description": "Klub sahibinin (admin) ID-si"
     }
   },
   "required": [
